@@ -1,0 +1,19 @@
+{
+  "name": "offroad-republika",
+  "version": "1.0.0",
+  "description": "",
+  "main": "serve.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "serve": "^14.2.6"
+  }
+}

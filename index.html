@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Офроуд Република</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Exo+2:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ONBOARDING RITUAL (4 steps) -->
+<div class="ob-overlay" id="obOverlay" style="display:none">
+  <div class="ob-container">
+
+    <!-- STEP 1: THE CALL -->
+    <div class="ob-step active" id="obStep1">
+      <div class="ob-call-title">ОТКРИЙ КАКЪВ<br><b>ОФРОУДЪР</b> СИ</div>
+      <div class="ob-call-sub">МЯСТОТО НА БЪЛГАРСКИТЕ ЕЗДАЧИ</div>
+      <div class="ob-call-counter"><div class="ob-call-dot"></div><span id="obCounter">2,847</span> ездачи вече вътре</div>
+      <br>
+      <button class="ob-cta" onclick="obNext(2)">ВЛИЗАМ</button>
+    </div>
+
+    <!-- STEP 2: ARCHETYPE -->
+    <div class="ob-step" id="obStep2">
+      <div class="ob-section-title">КАКЪВ ЕЗДАЧ СИ?</div>
+      <div class="ob-section-sub">Избери това, което те описва най-добре</div>
+      <div class="ob-archetype-grid">
+        <div class="ob-arch-card" onclick="obSelectArchetype(this,'wolf')"><div class="ob-arch-emoji">🐺</div><div class="ob-arch-name">Планинският вълк</div><div class="ob-arch-desc">Хард ендуро · самотник · планината е дом</div></div>
+        <div class="ob-arch-card" onclick="obSelectArchetype(this,'wanderer')"><div class="ob-arch-emoji">🌲</div><div class="ob-arch-name">Горският скитник</div><div class="ob-arch-desc">Ендуро трейлове · гори · спокойствие</div></div>
+        <div class="ob-arch-card" onclick="obSelectArchetype(this,'warrior')"><div class="ob-arch-emoji">💧</div><div class="ob-arch-name">Калният воин</div><div class="ob-arch-desc">Мотокрос · писта · кал до уши</div></div>
+        <div class="ob-arch-card" onclick="obSelectArchetype(this,'demon')"><div class="ob-arch-emoji">⚡</div><div class="ob-arch-name">Скоростният демон</div><div class="ob-arch-desc">Рали · скорост · адреналин</div></div>
+        <div class="ob-arch-card" onclick="obSelectArchetype(this,'traveler')"><div class="ob-arch-emoji">🗺️</div><div class="ob-arch-name">Пътешественикът</div><div class="ob-arch-desc">ADV турове · дълги маршрути</div></div>
+      </div>
+      <button class="ob-cta ob-disabled" id="obStep2Btn" onclick="obNext(3)">ПРОДЪЛЖИ</button>
+    </div>
+
+    <!-- STEP 3: BIKE -->
+    <div class="ob-step" id="obStep3">
+      <div class="ob-section-title">КАКЪВ МОТОР КАРАШ?</div>
+      <div class="ob-section-sub">Добави мотора си в гаража</div>
+      <div class="ob-bike-form">
+        <div class="ob-field"><label class="ob-label">Марка</label>
+          <select class="ob-input" id="obBikeMake"><option value="">— Избери —</option><option>KTM</option><option>Honda</option><option>Yamaha</option><option>Husqvarna</option><option>Beta</option><option>GasGas</option><option>Sherco</option><option>TM Racing</option><option>Suzuki</option><option>Kawasaki</option><option>Fantic</option></select>
+        </div>
+        <div class="ob-field"><label class="ob-label">Модел</label>
+          <input class="ob-input" id="obBikeModel" type="text" placeholder="EXC 300, YZ250F, CRF450R...">
+        </div>
+        <div class="ob-field"><label class="ob-label">Година</label>
+          <input class="ob-input" id="obBikeYear" type="number" placeholder="2024" min="1990" max="2026">
+        </div>
+      </div>
+      <button class="ob-cta" onclick="obAddBike()">ДОБАВИ В ГАРАЖА</button>
+      <div style="margin-top:16px"><span class="ob-skip" onclick="obSkipBike()">Нямам мотор все още →</span></div>
+    </div>
+
+    <!-- STEP 4: CEREMONY -->
+    <div class="ob-step" id="obStep4">
+      <div class="ob-section-title">ДОБРЕ ДОШЪЛ В РЕПУБЛИКАТА</div>
+      <div class="ob-ceremony-text">Влезе в място, градено от хора с кал по ботушите.<br>Тук няма позьори — има ездачи.</div>
+      <div class="ob-badge-reveal"><span class="ob-badge-emoji" id="obBadgeEmoji">🐺</span><div><div class="ob-badge-label" id="obBadgeLabel">Планинският вълк</div><div id="obTierLabel" style="font:500 10px 'JetBrains Mono',monospace;color:var(--text2)">НОВОБРАНЕЦ</div></div></div>
+      <div class="ob-progress-wrap"><div class="ob-progress-bar"><div class="ob-progress-fill" id="obProgressFill" style="width:0%"></div></div><div class="ob-progress-pct"><span id="obProgressPct">0</span>% от профила</div></div>
+      <div class="ob-checklist" id="obChecklist">
+        <div class="ob-check-item done"><span class="ob-chk">✓</span> Влезе в Републиката</div>
+        <div class="ob-check-item done"><span class="ob-chk">✓</span> Избра архетип</div>
+        <div class="ob-check-item" id="obCheckBike"><span class="ob-chk">○</span> Добави мотор в гаража</div>
+        <div class="ob-check-item ob-link" onclick="obFinish();setTimeout(function(){entryGo('forum')},600)"><span class="ob-chk">○</span> Публикувай първи пост →</div>
+        <div class="ob-check-item ob-link" onclick="obFinish();setTimeout(function(){entryGo('events')},600)"><span class="ob-chk">○</span> Запиши се за тур →</div>
+      </div>
+      <button class="ob-cta" onclick="obFinish()">ЗАПОЧНИ ДА КАРАМ</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-close" onclick="closeModal()">✕</div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-bg" id="authModalBg" onclick="if(event.target===this)closeAuthModal()">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-close" onclick="closeAuthModal()">✕</div>
+    <div id="authContent"></div>
+  </div>
+</div>
+
+<div class="wall">
+  <div class="wall-tint" id="wallTint"></div>
+  <div class="tire" id="tire"></div>
+  <div class="stk" style="top:10%;right:4%">est. 2024</div>
+  <div class="stk" style="top:38%;left:1.5%;transform:rotate(5deg)">4T ONLY</div>
+  <div class="stk" style="bottom:12%;right:6%;transform:rotate(-8deg)">КАЛ > АСФАЛТ</div>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="live">
+      <span><span class="dot"></span> <strong style="color:var(--text)">1,247</strong> ездачи · <span id="onlineN">47</span> онлайн</span>
+      <span>156 ремонта този месец</span>
+      <span>23 състезания 2026</span>
+    </div>
+    <div class="search-wrap" id="searchWrap">
+      <input class="search-in" id="searchIn" type="text" placeholder="🔍 Търси мотор, част, майстор..." oninput="debouncedSearch(this.value)" onfocus="this.parentElement.classList.add('focus')" onblur="setTimeout(function(){document.getElementById('searchWrap').classList.remove('focus')},200)">
+      <div class="search-drop" id="searchDrop"></div>
+    </div>
+    <div class="topbtns">
+      <span class="streak-badge" id="topbarStreak" style="display:none" title="Дни поредни"></span>
+      <div class="inbox-toggle" onclick="openInbox()" title="Съобщения">✉️<span class="inbox-badge" id="inboxBadge" style="display:none"></span></div>
+      <div class="garage-toggle" onclick="toggleGarage()" title="Моят Гараж">🏍️<span class="garage-badge" id="garageBadge" style="display:none"></span></div>
+      <span id="authArea"><button class="tbtn" onclick="toggleAuthModal()">🔐 Вход</button></span>
+      <button class="hamburger" id="hamburger" onclick="toggleMobileNav()"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+
+  <!-- NEON -->
+  <div class="neon"><h1>ОФРОУД РЕПУБЛИКА</h1><div class="neon-sub">ОБЩНОСТТА НА БЪЛГАРСКИТЕ ЕЗДАЧИ</div></div>
+
+  <!-- ENTRY: 5 PATHS -->
+  <div class="entry" id="entryBox">
+    <div class="ob-greeting" id="obGreeting" style="display:none"><div class="ob-greet-emoji" id="obGreetEmoji">🐺</div><div class="ob-greet-text"><strong id="obGreetName">Планинският вълк</strong><br><span id="obGreetMsg">Новобранец · Добре дошъл в Републиката</span></div></div>
+    <div class="entry-q">Какво търсиш?</div>
+    <div class="entry-grid">
+      <div class="ebtn" onclick="entryGo('dir','mech')">🔧<span>Търся майстор</span></div>
+      <div class="ebtn" onclick="entryGo('maze')">🛒<span>Търся части</span></div>
+      <div class="ebtn" onclick="entryGo('dir','shop')">🏪<span>Намери магазин</span></div>
+      <div class="ebtn" onclick="entryGo('events')">🗺️<span>Маршрути & събития</span></div>
+      <div class="ebtn ebtn-browse" onclick="entryGo('home')">👀<span>Просто разглеждам</span></div>
+    </div>
+
+    <!-- SPONSOR BAR -->
+    <div class="sponsor-bar">
+      <div class="sponsor-title">Официални партньори</div>
+      <div class="sponsor-grid">
+        <div class="sponsor-card" onclick="event.stopPropagation()">
+          <img class="sponsor-logo" src="https://www.ktm.com/favicon.ico" alt="KTM" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="sponsor-fallback" style="display:none;background:#ff6600">KTM</div>
+          <div class="sponsor-name">KTM България</div>
+          <div class="sponsor-role">Еди Мото Център</div>
+        </div>
+        <div class="sponsor-card" onclick="event.stopPropagation()">
+          <img class="sponsor-logo" src="https://www.honda.bg/favicon.ico" alt="Honda" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="sponsor-fallback" style="display:none;background:#cc0000">H</div>
+          <div class="sponsor-name">Honda България</div>
+          <div class="sponsor-role">Бултрако</div>
+        </div>
+        <div class="sponsor-card" onclick="event.stopPropagation()">
+          <img class="sponsor-logo" src="https://www.yamaha-motor.bg/favicon.ico" alt="Yamaha" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="sponsor-fallback" style="display:none;background:#0033a0">YMH</div>
+          <div class="sponsor-name">Yamaha България</div>
+          <div class="sponsor-role">Мото Динамикс</div>
+        </div>
+        <div class="sponsor-card" onclick="event.stopPropagation()">
+          <img class="sponsor-logo" src="https://www.husqvarna-motorcycles.com/favicon.ico" alt="Husqvarna" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="sponsor-fallback" style="display:none;background:#1a3a6b">HQ</div>
+          <div class="sponsor-name">Husqvarna</div>
+          <div class="sponsor-role">Официален партньор</div>
+        </div>
+        <div class="sponsor-card" onclick="event.stopPropagation()">
+          <img class="sponsor-logo" src="https://linsonmoto.com/favicon.ico" alt="Linson" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="sponsor-fallback" style="display:none;background:#e85c2a">LM</div>
+          <div class="sponsor-name">Linson Moto</div>
+          <div class="sponsor-role">Официален партньор</div>
+        </div>
+        <div class="sponsor-card" onclick="event.stopPropagation()">
+          <img class="sponsor-logo" src="https://www.betamotor.com/favicon.ico" alt="Beta/GasGas" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="sponsor-fallback" style="display:none;background:#e42320">BG</div>
+          <div class="sponsor-name">Beta · GasGas</div>
+          <div class="sponsor-role">Официален партньор</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:20px">
+      <span style="font:500 12px 'JetBrains Mono',monospace;color:var(--text2);cursor:pointer;transition:.2s;opacity:.7" onclick="entryGo('home')" onmouseover="this.style.color='var(--orange)';this.style.opacity='1'" onmouseout="this.style.color='var(--text2)';this.style.opacity='.7'">или влез директно →</span>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav" style="display:none">
+    <div class="ntab on" data-t="home">🏠 НАЧАЛО</div>
+    <div class="ntab" data-t="dir">📋 ДИРЕКТОРИЯ</div>
+    <div class="ntab" data-t="forum">💬 ФОРУМ</div>
+    <div class="ntab" data-t="maze">🔩 МАЗЕТО</div>
+    <div class="ntab" data-t="academy">🎓 АКАДЕМИЯ</div>
+    <div class="ntab ntab-pulse" data-t="events">🏁 СЪБИТИЯ</div>
+  </nav>
+
+  <!-- ========== НАЧАЛО ========== -->
+  <div class="tab" id="t-home" style="display:none">
+    <div class="g-home">
+      <div class="feed">
+
+        <!-- CTA for non-logged users -->
+        <div id="homeCta" class="home-cta" style="display:none">
+          <div class="home-cta-icon">🏍️</div>
+          <div class="home-cta-title">ПРИСЪЕДИНИ СЕ КЪМ РЕПУБЛИКАТА</div>
+          <div class="home-cta-desc">Гараж, форум, директория, събития — всичко за българския офроуд ездач.</div>
+          <button class="btn btn-o btn-primary-cta" onclick="toggleAuthModal()">Създай акаунт</button>
+        </div>
+
+        <!-- Live Stats -->
+        <div id="homeStats"></div>
+
+        <div class="fh">
+          <h2>📰 СУТРЕШЕН ВЕСТНИК</h2>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="meta" style="cursor:pointer;opacity:.5;transition:.2s" onclick="showToast('📊 Пиши ясно. Помагай конкретно. Общността гласува с лайкове. Ние броим топлината. Най-топлото влиза сутринта.')" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">Как влизаш тук? ℹ️</span>
+            <span class="meta">преди 8 мин</span>
+          </div>
+        </div>
+
+        <!-- Dynamic Feed (MOVED: before stories for content-first) -->
+        <div id="dynamicFeed" class="dynamic-feed-section"></div>
+
+        <div class="scroll-hint"><span class="scroll-hint-arrow">▼</span></div>
+
+        <!-- Последни теми -->
+        <div id="homeLatestTopics"></div>
+
+        <!-- Нови обяви strip -->
+        <div id="homeNewListings"></div>
+
+        <!-- Onboarding -->
+        <div style="background:rgba(232,98,44,.05);border:1px solid rgba(232,98,44,.12);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer" id="onb" onclick="go('forum')">
+          🏁 <span><strong>Първи мотор?</strong> Виж одобрените от общността — с майстор и магазин близо до теб.</span>
+          <span style="margin-left:auto;color:var(--text2);font-size:14px" onclick="event.stopPropagation();document.getElementById('onb').style.display='none'">✕</span>
+        </div>
+
+        <!-- FEED GRID (stories) -->
+        <div class="feed-grid" id="feedGrid">
+
+        <!-- Story 1: Ремонт (LARGE) -->
+        <div class="fc fc-large" onclick="toggleStory(this)">
+          <div class="fc-h">
+            <div class="ava">🔧</div>
+            <div style="flex:1;min-width:0">
+              <span class="fc-n link" onclick="event.stopPropagation();openProfile('pesho')">Пешо Механика</span>
+              <span class="badge b-ver">✓ Окачване</span>
+              <div class="meta">Майстор · преди 2ч · 📍 Пловдив</div>
+            </div>
+          </div>
+          <div class="fc-sum"><span class="chip" onclick="event.stopPropagation();go('forum')">YZ250F</span> <strong>Вибрацията оправена!</strong> Контратежест на коляновия вал — готово за 4ч<span class="fc-more">виж повече ↓</span></div>
+          <div class="fc-detail">
+            <div class="fc-b">Марин дойде, свалихме, промерихме — 0.3mm разлика. Нов контратежест от <span class="link" onclick="event.stopPropagation();openProfile('motohaus')">МотоХаус</span> — <span class="price-s">140 лв <span class="dual">/ 72 €</span></span>. Готово за 4 часа.</div>
+            <div class="ref-box"><span style="color:var(--green)">→</span> <strong>Форум тема:</strong> <span class="link" onclick="event.stopPropagation();go('forum')">Вибрация на 6000 — 34 отговора, РЕШЕНО ✓</span></div>
+            <div class="smart" onclick="event.stopPropagation();go('maze')">🔩 Контратежести YZ250F в Мазето → 2 обяви от 90 лв / 46 €</div>
+            <div class="fc-collapse" onclick="event.stopPropagation();toggleStory(this.closest('.fc'))">▲ скрий</div>
+          </div>
+          <div class="acts"><span>👍 127</span><span>💬 34</span><span>📎 Сподели</span><span class="report-btn" onclick="event.stopPropagation();reportPost(this)">[ ! ]</span></div>
+        </div>
+
+        <!-- Story 2: Рила Sunday -->
+        <div class="fc" onclick="toggleStory(this)">
+          <div class="fc-h">
+            <div class="ava">🏔️</div>
+            <div style="flex:1;min-width:0">
+              <span class="fc-n link" onclick="event.stopPropagation();openProfile('marin')">Марин Тодоров</span>
+              <span class="lv lv-m">🟠 МЕРАКЛИЯ</span>
+              <div class="meta">преди 6ч · 📍 Рила</div>
+            </div>
+          </div>
+          <div class="fc-sum"><strong>Рила Sunday — 4 часа в калта!</strong> 6 мотора, Кабакчиев ни водеше<span class="fc-more">виж повече ↓</span></div>
+          <div class="fc-detail">
+            <div class="fc-b">Тръгнахме 6 мотора от Самоков, стигнахме до Мальовица по горския. <span class="link" onclick="event.stopPropagation();openProfile('kabakchiev')">Кабакчиев</span> ни водеше — не бях виждал такова каране. 4 падания, 0 контузии, 100% усмивки.</div>
+            <div class="smart" onclick="event.stopPropagation();go('events')">🗺️ Маршрут: Самоков → Мальовица офроуд · 47 км · 4ч</div>
+            <div class="fc-collapse" onclick="event.stopPropagation();toggleStory(this.closest('.fc'))">▲ скрий</div>
+          </div>
+          <div class="acts"><span>👍 203</span><span>💬 56</span><span style="color:var(--orange)">❤️ 89</span><span class="report-btn" onclick="event.stopPropagation();reportPost(this)">[ ! ]</span></div>
+        </div>
+
+        <!-- 🔥 ОТ ГАРАЖА — новобранешки въпроси -->
+        <div class="fc garage-block">
+          <div class="fc-h">
+            <div class="ava" style="background:rgba(232,98,44,.15)">🔥</div>
+            <div style="flex:1"><span class="fc-n" style="color:var(--orange)">ОТ ГАРАЖА</span><div class="meta">Въпроси от новобранци</div></div>
+          </div>
+          <div class="garage-items">
+            <div class="garage-item" onclick="enterZone('newbie');go('forum')">
+              <span class="ft-tag" style="background:rgba(90,138,60,.1);color:var(--green)">НОВИ</span>
+              <span>Първи мотор за 5000 лв — какво да гледам?</span>
+              <span class="garage-heat">💬 23</span>
+            </div>
+            <div class="garage-item" onclick="enterZone('newbie');go('forum')">
+              <span class="ft-tag" style="background:rgba(90,138,60,.1);color:var(--green)">НОВИ</span>
+              <span>Каска за начинаещ — колко да дам?</span>
+              <span class="garage-heat">💬 15</span>
+            </div>
+            <div class="garage-item" onclick="enterZone('newbie');go('forum')">
+              <span class="ft-tag" style="background:rgba(90,138,60,.1);color:var(--green)">НОВИ</span>
+              <span>250 или 300 за първи ендуро мотор?</span>
+              <span class="garage-heat">💬 31</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Story 3: Нова покупка -->
+        <div class="fc" onclick="toggleStory(this)">
+          <div class="fc-h">
+            <div class="ava">🏍️</div>
+            <div style="flex:1;min-width:0">
+              <span class="fc-n">Иван Петров</span>
+              <span class="lv lv-p">🔵 ПРАКТИК</span>
+              <div class="meta">преди 1д · 📍 София</div>
+            </div>
+          </div>
+          <div class="fc-sum"><strong>Взех Fantic XEF 310 от МотоХаус!</strong> Старата KTM отива в Мазето<span class="fc-more">виж повече ↓</span></div>
+          <div class="fc-detail">
+            <div class="fc-b"><span class="price-s">15 800 лв <span class="dual">/ 8 080 €</span></span>. Чисто нов, Евро 5, документи за ден. Старата <span class="chip" onclick="event.stopPropagation();go('forum')">KTM EXC 300</span> отива в <span class="link" onclick="event.stopPropagation();go('maze')">Мазето</span> — някой да търси?</div>
+            <div class="smart" onclick="event.stopPropagation();go('maze')">🔩 KTM EXC 300 2019 · ще се появи в Мазето скоро</div>
+            <div class="fc-collapse" onclick="event.stopPropagation();toggleStory(this.closest('.fc'))">▲ скрий</div>
+          </div>
+          <div class="acts"><span>👍 156</span><span>💬 43</span><span>📎 Сподели</span><span class="report-btn" onclick="event.stopPropagation();reportPost(this)">[ ! ]</span></div>
+        </div>
+
+        <!-- Story 4: Събитие -->
+        <div class="fc" onclick="toggleStory(this)">
+          <div class="fc-h">
+            <div class="ava">🏁</div>
+            <div style="flex:1;min-width:0">
+              <span class="fc-n">BG-X Ендуро</span>
+              <span class="badge b-champ">🏁 Официално</span>
+              <div class="meta">Събитие · 15 март · 📍 Карлово</div>
+            </div>
+          </div>
+          <div class="fc-sum"><strong>BG-X Кръг 3 — Карлово!</strong> Регистрация отворена · Expert / Amateur / Hobby<span class="fc-more">виж повече ↓</span></div>
+          <div class="fc-detail">
+            <div class="fc-b">Такса участие <span class="price-s">80 лв <span class="dual">/ 41 €</span></span>. <span class="link" onclick="event.stopPropagation();openProfile('manolov')">Треньор Манолов</span> ще бъде на старта.</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+              <div class="cal-who" style="margin:0"><div class="cal-ava">🏆</div><div class="cal-ava">🔧</div><div class="cal-ava">🏅</div><div class="cal-ava">🏍️</div><div class="cal-ava">+</div></div>
+              <span class="meta">23 отиват</span>
+              <button class="btn btn-o" style="margin-left:auto;font-size:10px" onclick="event.stopPropagation();joinEvent('bgx-krug3',this)">Записвам се</button>
+            </div>
+            <div class="fc-collapse" onclick="event.stopPropagation();toggleStory(this.closest('.fc'))">▲ скрий</div>
+          </div>
+          <div class="acts"><span>👍 89</span><span>💬 21</span><span class="report-btn" onclick="event.stopPropagation();reportPost(this)">[ ! ]</span></div>
+        </div>
+
+        <!-- Story 5: Новобранец (full width) -->
+        <div class="fc fc-full" onclick="toggleStory(this)">
+          <div class="fc-h">
+            <div class="ava">🌟</div>
+            <div style="flex:1;min-width:0">
+              <span class="fc-n link" onclick="event.stopPropagation();openProfile('marin')">Стоян Николов</span>
+              <span class="lv lv-n">🟤 НОВОБРАНЕЦ</span>
+              <div class="meta">преди 2д · 📍 Бургас</div>
+            </div>
+          </div>
+          <div class="fc-sum"><strong>Първи път в гората — 4 падания, безкрайна усмивка!</strong><span class="fc-more">виж повече ↓</span></div>
+          <div class="fc-detail">
+            <div class="fc-b">🏍️ Наех мотор от <span class="link" onclick="event.stopPropagation();openProfile('motohaus')">EdiMoto</span>, <span class="link" onclick="event.stopPropagation();openProfile('manolov')">Треньор Манолов</span> ме водеше. 2 часа, калта до ушите. Кога е следващият път?</div>
+            <div class="smart" onclick="event.stopPropagation();openProfile('manolov')">🏅 Треньор Манолов · следваща тренировка: 22 март · Запиши се</div>
+            <div class="fc-collapse" onclick="event.stopPropagation();toggleStory(this.closest('.fc'))">▲ скрий</div>
+          </div>
+          <div class="acts"><span>👍 178</span><span>💬 42</span><span style="color:var(--orange)">❤️ Добре дошъл!</span><span class="report-btn" onclick="event.stopPropagation();reportPost(this)">[ ! ]</span></div>
+        </div>
+
+        </div><!-- /feed-grid -->
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <!-- Calendar -->
+        <div class="sb">
+          <div class="sb-t">📅 ПРЕДСТОЯЩО<span class="more" onclick="go('events')">ВСИЧКИ →</span></div>
+          <div class="cal-ev">
+            <div class="cal-date">15 МАРТ 2026</div>
+            <div class="cal-name">🏁 BG-X Кръг 3</div>
+            <div class="cal-loc">📍 Карлово · Expert / Amateur / Hobby</div>
+            <div class="cal-who"><div class="cal-ava">🏆</div><div class="cal-ava">🔧</div><div class="cal-ava">🏅</div><div class="cal-ava" style="font-size:8px">+20</div></div>
+            <div class="cal-join"><button class="btn btn-o" style="font-size:10px;padding:4px 10px" onclick="joinEvent('bgx-krug3',this)">Записвам се</button></div>
+          </div>
+          <div class="cal-ev">
+            <div class="cal-date">22 МАРТ 2026</div>
+            <div class="cal-name">🏅 Тренировка при Манолов</div>
+            <div class="cal-loc">📍 Манолово · Всички нива</div>
+            <div class="cal-who"><div class="cal-ava">🏅</div><div class="cal-ava">🏍️</div><div class="cal-ava" style="font-size:8px">+8</div></div>
+            <div class="cal-join"><button class="btn btn-o" style="font-size:10px;padding:4px 10px" onclick="joinEvent('training-22mar',this)">Карай с нас</button></div>
+            <div class="cal-join"><button class="btn btn-g" style="font-size:10px;padding:4px 10px">Карай с нас</button></div>
+          </div>
+          <div class="cal-ev">
+            <div class="cal-date">АПРИЛ 2026</div>
+            <div class="cal-name">🔥 Six Days Crazy Job</div>
+            <div class="cal-loc">📍 Казанлък · Международно</div>
+            <div class="cal-who"><div class="cal-ava">🏆</div><div class="cal-ava">👑</div><div class="cal-ava" style="font-size:8px">+45</div></div>
+          </div>
+        </div>
+
+        <!-- Top Directory -->
+        <div class="sb">
+          <div class="sb-t">📋 ТОП ДИРЕКТОРИЯ<span class="more" onclick="go('dir')">ВСИЧКИ →</span></div>
+          <div class="sbi" onclick="openProfile('motohaus')"><div class="sbi-i">🏪</div><div><strong style="font-size:12px">МотоХаус</strong><div class="meta">Магазин & Сервиз</div></div><span class="sbi-r">★ 4.9</span></div>
+          <div class="sbi" onclick="openProfile('pesho')"><div class="sbi-i">🔧</div><div><strong style="font-size:12px">Пешо Механика</strong><div class="meta">Окачване</div></div><span class="sbi-r">★ 5.0</span></div>
+          <div class="sbi" onclick="openProfile('manolov')"><div class="sbi-i">🏅</div><div><strong style="font-size:12px">Треньор Манолов</strong><div class="meta">Легенда</div></div><span class="sbi-r">★ 5.0</span></div>
+          <div class="sbi" onclick="openProfile('kabakchiev')"><div class="sbi-i">🏆</div><div><strong style="font-size:12px">Кабакчиев</strong><div class="meta">Hard Enduro</div></div><span class="sbi-r">★ 5.0</span></div>
+        </div>
+
+        <!-- Hot Forum -->
+        <div class="sb">
+          <div class="sb-t">💬 ГОРЕЩ ФОРУМ<span class="more" onclick="go('forum')">ВСИЧКИ →</span></div>
+          <div class="sbi" onclick="go('forum')"><div class="sbi-i" style="font-size:9px;background:rgba(196,154,108,.15);color:var(--earth)">YZ</div><div style="font-size:12px">Вибрация на 6000 <span style="color:var(--green);font-size:10px">✓ РЕШЕНО</span></div><span class="sbi-c">34</span></div>
+          <div class="sbi" onclick="go('forum')"><div class="sbi-i" style="font-size:9px;background:rgba(232,98,44,.12);color:var(--orange)">KTM</div><div style="font-size:12px">TPI vs карбуратор</div><span class="sbi-c">67</span></div>
+          <div class="sbi" onclick="go('forum')"><div class="sbi-i" style="font-size:9px;background:rgba(90,138,60,.12);color:var(--green)">🔧</div><div style="font-size:12px">Ендуро гуми БГ 2026</div><span class="sbi-c">91</span></div>
+        </div>
+
+        <!-- Горещо днес -->
+        <div class="sb">
+          <div class="sb-t">🔥 ГОРЕЩО ДНЕС<span class="more">ВСИЧКИ →</span></div>
+          <div id="hotTodayItems">
+            <div class="sbi" onclick="openProfile('motohaus')">
+              <div class="sbi-i" style="background:rgba(232,98,44,.12);font-size:11px">🔥</div>
+              <div><strong style="font-size:12px">WP XPLOR Ревизия</strong><div class="meta">МотоХаус · от 220 лв</div></div>
+            </div>
+            <div class="sbi" onclick="openProfile('elilison')">
+              <div class="sbi-i" style="background:rgba(180,130,220,.12);font-size:11px">🧤</div>
+              <div><strong style="font-size:12px">Alpinestars Tech 7</strong><div class="meta">Ели Лисън · 890 лв</div></div>
+            </div>
+            <div class="sbi" onclick="openProfile('pesho')">
+              <div class="sbi-i" style="background:rgba(90,138,60,.12);font-size:11px">🔧</div>
+              <div><strong style="font-size:12px">Окачване ревизия</strong><div class="meta">Пешо Механика · от 220 лв</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- За твоя мотор (показва се само ако има мотори в гаража) -->
+        <div class="sb" id="forYourBike" style="display:none">
+          <div class="for-your-bike"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ДИРЕКТОРИЯ ========== -->
+  <div class="tab" id="t-dir">
+    <div class="sec-title">📋 ДИРЕКТОРИЯ</div>
+    <div class="dir-f" id="dirFilters">
+      <div class="df on" data-fc="all">Всички</div>
+      <div class="df" data-fc="shop">🏪 Магазини</div>
+      <div class="df" data-fc="mech">🔧 Майстори</div>
+      <div class="df" data-fc="coach">🏅 Треньори</div>
+      <div class="df" data-fc="elec">⚡ Електрика</div>
+      <div class="df" data-fc="tour">🗺️ Турове</div>
+    </div>
+    <div class="g-dir">
+      <!-- МотоХаус -->
+      <div class="dc" data-cat="shop" onclick="openProfile('motohaus')">
+        <div class="dc-h"><div class="dc-ico sh">🏪</div><div><div class="dc-nm">МотоХаус Нови хан</div><div class="dc-sp">Магазин & Сервиз · Ендуро, Мотокрос, ATV</div></div><div class="dc-rt">★ 4.9</div></div>
+        <div class="dc-badges"><span class="badge b-ver">✓ Верифициран</span><span class="badge b-ik">✓ Интеркарс</span><span class="badge b-leg">🏆 Величко</span></div>
+        <div class="dc-det"><span>📍 Нови хан</span><span>⏰ Пон-Съб 9-18</span><span>⚡ ~2ч отговор</span></div>
+        <div class="shop-offer">🔥 <strong>Нови WP XPLOR вилки</strong> · Ревизия от <span class="price-s">220 лв <span class="dual">/ 112 €</span></span></div>
+        <div class="dc-act"><button class="btn btn-o">Свържи се с МотоХаус</button><button class="btn btn-s">Провери наличност</button></div>
+      </div>
+      <!-- Кабакчиев -->
+      <div class="dc" data-cat="coach" onclick="openProfile('kabakchiev')">
+        <div class="dc-h"><div class="dc-ico ch">🏆</div><div><div class="dc-nm">Теодор Кабакчиев</div><div class="dc-sp">Световен Шампион Hard Enduro</div></div><div class="dc-rt">★ 5.0</div></div>
+        <div class="dc-badges"><span class="badge b-champ">🏆 Световен Шампион</span><span class="lv lv-l">🟡 ЛЕГЕНДА</span></div>
+        <div class="dc-det"><span>📍 Габрово</span><span>🏍️ Hard Enduro, Extreme</span></div>
+        <div class="dc-act"><button class="btn btn-o">Прати съобщение</button></div>
+      </div>
+      <!-- Пешо -->
+      <div class="dc" data-cat="mech" onclick="openProfile('pesho')">
+        <div class="dc-h"><div class="dc-ico me">🔧</div><div><div class="dc-nm">Пешо Механика</div><div class="dc-sp">Окачване специалист</div></div><div class="dc-rt">★ 5.0</div></div>
+        <div class="dc-badges"><span class="badge b-ver">✓ Окачване</span><span class="badge b-leg">🏆 Величко</span><span class="lv lv-v">🟤 ВЕТЕРАН</span></div>
+        <div class="dc-det"><span>📍 Пловдив</span><span>⏰ Пон-Пет 8:30-17:30</span><span>⚡ ~1ч отговор</span></div>
+        <div class="dc-act"><button class="btn btn-o">Запиши час</button><button class="btn btn-s">Питай майстора</button></div>
+      </div>
+      <!-- Манолов -->
+      <div class="dc" data-cat="coach" onclick="openProfile('manolov')">
+        <div class="dc-h"><div class="dc-ico co">🏅</div><div><div class="dc-nm">Величко Манолов</div><div class="dc-sp">Мотокрос Легенда · Треньор</div></div><div class="dc-rt">★ 5.0</div></div>
+        <div class="dc-badges"><span class="badge b-leg">👑 Легенда</span><span class="lv lv-l">🟡 ЛЕГЕНДА</span></div>
+        <div class="dc-det"><span>📍 Манолово</span><span>🏁 Новобранци добре дошли</span></div>
+        <div class="dc-act"><button class="btn btn-o">Карай с нас</button><button class="btn btn-s">Прати съобщение</button></div>
+      </div>
+      <!-- EdiMoto -->
+      <div class="dc" data-cat="shop" onclick="openProfile('edimoto')">
+        <div class="dc-h"><div class="dc-ico pa">🏍️</div><div><div class="dc-nm">EdiMoto</div><div class="dc-sp">Употребявани части · Всички марки</div></div><div class="dc-rt">★ 4.7</div></div>
+        <div class="dc-badges"><span class="badge b-ver">✓ Верифициран</span><span class="lv lv-p">🔵 ПРАКТИК</span></div>
+        <div class="dc-det"><span>📍 София</span><span>📦 230+ части</span></div>
+        <div class="dc-act"><button class="btn btn-o">Намери частта</button></div>
+      </div>
+      <!-- Гошо Електро -->
+      <div class="dc" data-cat="elec" onclick="openProfile('gosho')">
+        <div class="dc-h"><div class="dc-ico el">⚡</div><div><div class="dc-nm">Гошо Електро</div><div class="dc-sp">Електроника · EFI, CDI, TPI</div></div><div class="dc-rt">★ 4.8</div></div>
+        <div class="dc-badges"><span class="badge b-ver">✓ Верифициран</span><span class="lv lv-v">🟤 ВЕТЕРАН</span></div>
+        <div class="dc-det"><span>📍 Варна</span><span>⚡ ~30мин отговор</span></div>
+        <div class="dc-act"><button class="btn btn-o">Питай майстора</button></div>
+      </div>
+      <!-- EdiMoto Дилър -->
+      <div class="dc" data-cat="shop" onclick="openProfile('edimoto_shop')">
+        <div class="dc-h"><div class="dc-ico sh">🏍️</div><div><div class="dc-nm">EdiMoto</div><div class="dc-sp">Официален дилър KTM Group & Kawasaki</div></div><div class="dc-rt">★ 4.8</div></div>
+        <div class="dc-badges"><span class="badge b-ver">✓ Верифициран</span><span class="badge b-champ">🏍️ KTM / Husqvarna / GasGas</span></div>
+        <div class="dc-det"><span>📍 София</span><span>⏰ Пон-Съб 9-18</span><span>⚡ ~1ч отговор</span></div>
+        <div class="shop-offer">🔥 <strong>KTM 350 EXC-F 2025</strong> · <span class="price-s">22 400 лв <span class="dual">/ 11 453 €</span></span></div>
+        <div class="dc-act"><button class="btn btn-o">Свържи се с EdiMoto</button><button class="btn btn-s">Разгледай моторите</button></div>
+      </div>
+      <!-- Ели Лисън Мото -->
+      <div class="dc" data-cat="shop" onclick="openProfile('elilison')">
+        <div class="dc-h"><div class="dc-ico" style="background:rgba(180,130,220,.12)">🧤</div><div><div class="dc-nm">Ели Лисън Мото</div><div class="dc-sp">Аксесоари & Екипировка · Всички марки</div></div><div class="dc-rt">★ 4.9</div></div>
+        <div class="dc-badges"><span class="badge b-ver">✓ Верифициран</span><span class="badge" style="background:rgba(180,130,220,.12);color:#b482dc">🧤 Екипировка</span></div>
+        <div class="dc-det"><span>📍 София</span><span>⏰ Пон-Съб 10-19</span><span>📦 Доставка из БГ</span></div>
+        <div class="shop-offer">🔥 <strong>Alpinestars Tech 7 Enduro</strong> · <span class="price-s">890 лв <span class="dual">/ 455 €</span></span></div>
+        <div class="dc-act"><button class="btn btn-o">Свържи се с Ели Лисън</button><button class="btn btn-s">Разгледай екипировка</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ФОРУМ / ПОХВАТИ ========== -->
+  <div class="tab" id="t-forum">
+    <div class="sec-title">💬 ФОРУМ / ПОХВАТИ</div>
+
+    <!-- Breadcrumb -->
+    <div class="forum-bc" id="forumBc" style="display:none">
+      <span class="forum-bc-home" onclick="forumHome()">← Всички зони</span>
+      <span class="forum-bc-sep">/</span>
+      <span class="forum-bc-zone" id="forumBcZone"></span>
+    </div>
+
+    <!-- Zone landing (5 карти) -->
+    <div class="forum-zones" id="forumZones">
+      <div class="fz fz-newbie" data-zone="newbie" onclick="enterZone('newbie')">
+        <div class="fz-ico">🔥</div>
+        <div class="fz-nm" style="text-transform:uppercase;letter-spacing:1px">НОВОБРАНЕЦ</div>
+        <div class="fz-desc">Всички сме минали оттук.</div>
+        <div class="fz-count">42 теми <span class="fz-pulse fz-pulse-warm"></span></div>
+        <div class="fz-tier">🟤 Всички</div>
+      </div>
+      <div class="fz" data-zone="problem" onclick="enterZone('problem')">
+        <div class="fz-ico">🔧</div>
+        <div class="fz-nm">Проблем с мотора</div>
+        <div class="fz-desc">Диагностика, вибрации, шум, течове</div>
+        <div class="fz-count">89 теми <span class="fz-pulse fz-pulse-hot"></span></div>
+        <div class="fz-tier">🟠 Мераклия+</div>
+      </div>
+      <div class="fz" data-zone="tech" onclick="enterZone('tech')">
+        <div class="fz-ico">⚙️</div>
+        <div class="fz-nm">Техническо</div>
+        <div class="fz-desc">Окачване, двигатели, гуми, части, надстройки</div>
+        <div class="fz-count">67 теми <span class="fz-pulse fz-pulse-warm"></span></div>
+        <div class="fz-tier">🟠 Мераклия+</div>
+      </div>
+      <div class="fz" data-zone="plan" onclick="enterZone('plan')">
+        <div class="fz-ico">🗺️</div>
+        <div class="fz-nm">Планиране</div>
+        <div class="fz-desc">Маршрути, турове, срещи, подготовка</div>
+        <div class="fz-count">34 теми <span class="fz-pulse fz-pulse-calm"></span></div>
+        <div class="fz-tier">🔵 Практик+</div>
+      </div>
+      <div class="fz" data-zone="skill" onclick="enterZone('skill')">
+        <div class="fz-ico">🤸</div>
+        <div class="fz-nm">Финес и похват</div>
+        <div class="fz-desc">Техника на каране, тренировки, съвети от професионалисти</div>
+        <div class="fz-count">28 теми <span class="fz-pulse fz-pulse-calm"></span></div>
+        <div class="fz-tier">🔵 Практик+</div>
+      </div>
+      <div class="fz" data-zone="story" onclick="enterZone('story')">
+        <div class="fz-ico">📸</div>
+        <div class="fz-nm">Истории от пътя</div>
+        <div class="fz-desc">Снимки, преживявания, маршрути — споделяй!</div>
+        <div class="fz-count">19 теми <span class="fz-pulse fz-pulse-warm"></span></div>
+        <div class="fz-tier">🟠 Мераклия+</div>
+      </div>
+      <div class="fz" data-zone="chat" onclick="enterZone('chat')">
+        <div class="fz-ico">☕</div>
+        <div class="fz-nm">Свободен разговор</div>
+        <div class="fz-desc">За всичко, което не пасва другаде</div>
+        <div class="fz-count">31 теми <span class="fz-pulse fz-pulse-calm"></span></div>
+        <div class="fz-tier">🟠 Мераклия+</div>
+      </div>
+    </div>
+
+    <!-- Zone content (скрит до клик) -->
+    <div id="forumThreads" style="display:none">
+      <!-- Наръчник на новобранеца (pinned, само в newbie зона) -->
+      <div class="forum-handbook" id="forumHandbook" style="display:none">
+        <div class="fhb-title">📖 НАРЪЧНИК НА НОВОБРАНЕЦА</div>
+        <div class="fhb-items">
+          <div class="fhb-item" onclick="go('maze')">🏍️ Как да избера първи мотор</div>
+          <div class="fhb-item" onclick="openProfile('pesho')">🔧 Намери механик близо до теб</div>
+          <div class="fhb-item" onclick="openProfile('manolov')">🏅 Запиши се на тренировка</div>
+          <div class="fhb-item" onclick="go('events')">🗺️ Първо каране — къде и с кого</div>
+        </div>
+        <!-- Pinned veteran message -->
+        <div style="margin-top:12px;padding:10px 14px;background:rgba(196,154,108,.05);border:1px solid rgba(196,154,108,.15);border-radius:8px;font-size:12px;line-height:1.6">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <div class="ava" style="width:28px;height:28px;font-size:13px">🏆</div>
+            <span class="fc-n link" onclick="openProfile('kabakchiev')">Кабакчиев</span>
+            <span class="lv lv-l">🟡</span>
+            <span class="meta">📌 Закачено</span>
+          </div>
+          <em style="color:var(--text2)">"Всеки от нас е бил новобранец. Питай без срам — тук няма глупави въпроси. Само глупави отговори, и за тях общността се грижи."</em>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="ff-bar" id="forumFilter" style="display:none">
+        <span class="ff-chip on" data-filter="all">Всички</span>
+        <span class="ff-chip" data-filter="q">❓ Въпрос</span>
+        <span class="ff-chip" data-filter="e">📝 Опит</span>
+        <span class="ff-chip" data-filter="s">✅ Решено</span>
+        <span class="ff-chip" data-filter="h">🔥 Горещо</span>
+      </div>
+
+      <!-- Нова тема + таг избор -->
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <select id="newTopicZone" style="padding:6px 12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font:500 11px 'Exo 2',sans-serif;outline:none;cursor:pointer">
+          <option value="" disabled selected>Избери зона...</option>
+          <option value="newbie">🔥 Новобранец</option>
+          <option value="problem">🔧 Проблем с мотора</option>
+          <option value="tech">⚙️ Техническо</option>
+          <option value="plan">🗺️ Планиране</option>
+          <option value="skill">🤸 Финес и похват</option>
+          <option value="story">📸 Истории от пътя</option>
+          <option value="chat">☕ Свободен разговор</option>
+        </select>
+        <button class="btn btn-o btn-primary-cta" onclick="event.stopPropagation();handleNewTopic()">✏️ Нова тема</button>
+      </div>
+      <div class="input-community-msg" style="text-align:right;margin-top:-8px;margin-bottom:12px">💭 Споделяй знание, а не его. · Помагай, преди да критикуваш. · Знанието расте, когато го споделяш.</div>
+      <div id="newTopicFormArea"></div>
+      <div id="userForumPosts"></div>
+
+    <!-- LIVING THREAD: YZ250F Vibration -->
+    <div class="ft" data-zone="problem" data-type="s" data-tags="yz250f,yamaha,вибрация,контратежест,двигател" onclick="toggleThread(this)">
+      <div class="ft-top">
+        <span class="ft-type ft-type-s">✅ РЕШЕНО</span>
+        <span class="ft-tag">YZ250F</span><span class="ft-zone-tag" data-z="problem">🔧 Проблем</span>
+        <div class="ft-c">
+          <div class="ft-t">Вибрация на 6000 оборота — какво да проверя? <span style="color:var(--green);font-size:11px">✓ РЕШЕНО</span></div>
+          <div class="ft-p">Пълна история: от въпрос до решение. Пешо диагностицира → Кабакчиев потвърди → МотоХаус достави частта → Марин оправи.</div>
+          <div class="ft-a"><span class="link" onclick="event.stopPropagation();openProfile('marin')">Марин Тодоров</span> <span class="lv lv-m">🟠</span> · 5 участника · решено за 3 дни</div>
+        </div>
+        <div class="ft-s"><span class="ft-n">34</span><span class="ft-l">отговора</span></div>
+      </div>
+      <!-- Living thread detail -->
+      <div class="thread" id="thread1">
+        <!-- Post 1: Question -->
+        <div class="th-post">
+          <div class="th-post-h">
+            <div class="ava" style="width:32px;height:32px;font-size:14px">🏍️</div>
+            <div><span class="fc-n link" onclick="event.stopPropagation();openProfile('marin')">Марин Тодоров</span><span class="lv lv-m">🟠 МЕРАКЛИЯ</span><span class="meta" style="margin-left:6px">3 дни назад</span></div>
+          </div>
+          <div class="th-post-body">Появи се вибрация на 6000 об., на студено, след 10 мин изчезва. Мислех за окачване, но не съм сигурен. <span class="chip">YZ250F</span> 2019, 120 моточаса. Някой имал ли е подобно?</div>
+        </div>
+        <!-- Post 2: Pesho answers -->
+        <div class="th-post">
+          <div class="th-post-h">
+            <div class="ava" style="width:32px;height:32px;font-size:14px">🔧</div>
+            <div><span class="fc-n link" onclick="event.stopPropagation();openProfile('pesho')">Пешо Механика</span><span class="badge b-ver" style="font-size:9px">✓ Окачване</span><span class="lv lv-v">🟤</span><span class="meta" style="margin-left:6px">3 дни назад</span></div>
+          </div>
+          <div class="th-ver">
+            <div class="th-ver-l">✓ ВЕРИФИЦИРАН ОТГОВОР</div>
+            Ако вибрацията е при конкретни обороти и идва от долу — почти сигурно е контратежест коляновия вал. Не е окачване. Вдигни задницата и газирай — ако усещаш в степенките → долна част на двигателя. Промери контратежеста.
+          </div>
+          <div style="padding-left:44px;font-size:11px;color:var(--text2)">
+            <span class="link" onclick="event.stopPropagation();openProfile('pesho')">Пешо Механика</span> · Окачване специалист · 📍 Пловдив · <span class="link" onclick="event.stopPropagation();openProfile('pesho')">Виж профил →</span>
+          </div>
+        </div>
+        <!-- Post 3: Kabakchiev confirms -->
+        <div class="th-post">
+          <div class="th-post-h">
+            <div class="ava" style="width:32px;height:32px;font-size:14px">🏆</div>
+            <div><span class="fc-n link" onclick="event.stopPropagation();openProfile('kabakchiev')">Теодор Кабакчиев</span><span class="badge b-champ" style="font-size:9px">🏆</span><span class="lv lv-l">🟡</span><span class="meta" style="margin-left:6px">2 дни назад</span></div>
+          </div>
+          <div class="th-post-body">Пешо е прав. Същото имах на моя 2018 YZ. Контратежест + крайно уплътнение. Не губи време с окачване — отвори долу.</div>
+        </div>
+        <!-- Post 4: MotoHaus has part -->
+        <div class="th-post">
+          <div class="th-post-h">
+            <div class="ava" style="width:32px;height:32px;font-size:14px">🏪</div>
+            <div><span class="fc-n link" onclick="event.stopPropagation();openProfile('motohaus')">МотоХаус Нови хан</span><span class="badge b-ver" style="font-size:9px">✓</span><span class="badge b-ik" style="font-size:9px">✓ Интеркарс</span><span class="meta" style="margin-left:6px">2 дни назад</span></div>
+          </div>
+          <div class="th-post-body">Имаме контратежест за YZ250F 2019-2023 на склад. <span class="price-s">140 лв <span class="dual">/ 72 €</span></span>. Пратка утре или на място в Нови хан.</div>
+        </div>
+        <!-- Post 5: Marin resolved -->
+        <div class="th-post">
+          <div class="th-post-h">
+            <div class="ava" style="width:32px;height:32px;font-size:14px">🏍️</div>
+            <div><span class="fc-n link" onclick="event.stopPropagation();openProfile('marin')">Марин Тодоров</span><span class="lv lv-m">🟠</span><span class="meta" style="margin-left:6px">преди 2ч</span></div>
+          </div>
+          <div class="th-resolved">
+            ✅ <strong>РЕШЕНО!</strong> Точно контратежест — 0.3mm разлика. Нов от <span class="link" onclick="event.stopPropagation();openProfile('motohaus')">МотоХаус</span>, <span class="link" onclick="event.stopPropagation();openProfile('pesho')">Пешо</span> го смени за 4 часа. Мерси на всички! Цена: част <span class="price-s">140 лв</span> + труд <span class="price-s">120 лв</span> = <strong>260 лв <span class="dual">/ 133 €</span></strong>
+          </div>
+        </div>
+      <!-- Relevant businesses panel -->
+      <div style="margin-top:12px;padding:12px;background:rgba(232,98,44,.03);border:1px solid rgba(232,98,44,.08);border-radius:8px">
+        <div style="font:500 9px 'JetBrains Mono',monospace;letter-spacing:1px;color:var(--earth);margin-bottom:8px">🏪 СВЪРЗАНИ БИЗНЕСИ</div>
+        <div class="sbi" onclick="event.stopPropagation();openProfile('motohaus')"><div class="sbi-i" style="font-size:11px">🏪</div><div><strong style="font-size:11px">МотоХаус</strong><div class="meta">Участва в темата · Част на склад</div></div></div>
+        <div class="sbi" onclick="event.stopPropagation();openProfile('pesho')"><div class="sbi-i" style="font-size:11px">🔧</div><div><strong style="font-size:11px">Пешо Механика</strong><div class="meta">Верифициран отговор · Извърши ремонта</div></div></div>
+      </div>
+      </div>
+
+      <div class="ft-also">Виж също: <span class="link" onclick="event.stopPropagation();enterZone('tech')">⚙️ Техническо</span> · <span class="link" onclick="event.stopPropagation();go('maze')">🔩 Части в Мазето</span></div>
+      <div class="ft-react">
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">👍 12</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🔧 Имах същото 4</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🙏 Мерси 7</button>
+      </div>
+    </div>
+
+    <!-- More threads -->
+    <div class="ft" data-zone="tech" data-type="q" data-tags="ktm,exc,tpi,карбуратор" onclick="toggleThreadV10(this)">
+      <div class="ft-top">
+        <span class="ft-type ft-type-q">❓ ВЪПРОС</span>
+        <span class="ft-tag">KTM EXC</span><span class="ft-zone-tag" data-z="tech">⚙️ Техническо</span>
+        <div class="ft-c"><div class="ft-t">TPI vs карбуратор — кое за какво?</div><div class="ft-p">Горе TPI е по-чист, но долу при ниски обороти карбураторът дава повече контрол...</div>
+        <div class="ft-a"><span class="link" onclick="openProfile('kabakchiev')">Кабакчиев</span> <span class="badge b-champ" style="font-size:9px">🏆</span> · последно преди 5ч</div></div>
+        <div class="ft-s"><span class="ft-n">67</span><span class="ft-l">отговора</span></div>
+      </div>
+      <div class="ft-also">Виж също: <span class="link" onclick="event.stopPropagation();enterZone('problem')">🔧 Проблем с мотора</span> · <span class="link" onclick="event.stopPropagation();openProfile('edimoto_shop')">🏍️ EdiMoto — KTM дилър</span></div>
+      <div class="ft-react">
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">👍 21</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🔧 Имах същото 8</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🙏 Мерси 15</button>
+      </div>
+    </div>
+    <div class="ft" data-zone="problem" data-type="h" data-tags="fantic,xef,euro5,ecu,електрика" onclick="toggleThreadV10(this)">
+      <div class="ft-top">
+        <span class="ft-type ft-type-h">🔥 ГОРЕЩО</span>
+        <span class="ft-tag">FANTIC</span><span class="ft-zone-tag" data-z="problem">🔧 Проблем</span>
+        <div class="ft-c"><div class="ft-t">XEF 310 Евро 5 — проблеми и решения</div><div class="ft-p">Каталитичен конвертор, ECU ремап, какво работи реално...</div>
+        <div class="ft-a"><span class="link" onclick="openProfile('gosho')">Гошо Електро</span> <span class="badge b-ver" style="font-size:9px">✓</span> · последно преди 1д</div></div>
+        <div class="ft-s"><span class="ft-n">23</span><span class="ft-l">отговора</span></div>
+      </div>
+      <div class="ft-also">Виж също: <span class="link" onclick="event.stopPropagation();enterZone('tech')">⚙️ Техническо</span> · <span class="link" onclick="event.stopPropagation();openProfile('gosho')">⚡ Гошо Електро</span></div>
+      <div class="ft-react">
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">👍 6</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🔧 Имах същото 3</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🙏 Мерси 2</button>
+      </div>
+    </div>
+    <div class="ft" data-zone="tech" data-type="e" data-tags="гуми,ендуро,michelin,mitas,maxxis" onclick="toggleThreadV10(this)">
+      <div class="ft-top">
+        <span class="ft-type ft-type-e">📝 ОПИТ</span>
+        <span class="ft-tag">ГУМИ</span><span class="ft-zone-tag" data-z="tech">⚙️ Техническо</span>
+        <div class="ft-c"><div class="ft-t">Ендуро гуми за БГ условия 2026</div><div class="ft-p">Michelin Enduro Medium, Mitas, Maxxis — впечатления за кал, камъни, пясък...</div>
+        <div class="ft-a"><span class="link" onclick="openProfile('manolov')">Треньор Манолов</span> <span class="badge b-leg" style="font-size:9px">👑</span> · последно преди 3ч</div></div>
+        <div class="ft-s"><span class="ft-n">91</span><span class="ft-l">отговора</span></div>
+      </div>
+      <div class="ft-also">Виж също: <span class="link" onclick="event.stopPropagation();enterZone('skill')">🏆 Финес и похват</span> · <span class="link" onclick="event.stopPropagation();go('maze')">🔩 Гуми в Мазето</span></div>
+      <div class="ft-react">
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">👍 34</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🔧 Имах същото 11</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🙏 Мерси 19</button>
+      </div>
+    </div>
+    <div class="ft" data-zone="tech" data-type="q" data-tags="окачване,wp,настройка,ревизия,вилка" onclick="toggleThreadV10(this)">
+      <div class="ft-top">
+        <span class="ft-type ft-type-q">❓ ВЪПРОС</span>
+        <span class="ft-tag">ОКАЧВАНЕ</span><span class="ft-zone-tag" data-z="tech">⚙️ Техническо</span>
+        <div class="ft-c"><div class="ft-t">Showa vs WP XPLOR — за 90+ кг ездачи</div><div class="ft-p">Бюджет до 800 лв за ревизия + пружини. Кой е по-добрият вариант?</div>
+        <div class="ft-a"><span class="link" onclick="openProfile('pesho')">Пешо Механика</span> <span class="badge b-ver" style="font-size:9px">✓</span> · последно преди 6ч</div></div>
+        <div class="ft-s"><span class="ft-n">18</span><span class="ft-l">отговора</span></div>
+      </div>
+      <div class="ft-also">Виж също: <span class="link" onclick="event.stopPropagation();openProfile('pesho')">🔧 Пешо Механика</span> · <span class="link" onclick="event.stopPropagation();openProfile('motohaus')">🏪 МотоХаус — WP части</span></div>
+      <div class="ft-react">
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">👍 5</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🔧 Имах същото 2</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🙏 Мерси 1</button>
+      </div>
+    </div>
+
+    <!-- Story zone threads -->
+    <div class="ft" data-zone="story" data-type="e" data-tags="пътуване,родопи,снимки" onclick="toggleThreadV10(this)">
+      <div class="ft-top">
+        <span class="ft-type ft-type-e">📝 ОПИТ</span>
+        <span class="ft-tag">МАРШРУТ</span><span class="ft-zone-tag" data-z="story">📸 Истории</span>
+        <div class="ft-c"><div class="ft-t">Родопски рунд — 3 дни, 400км черни пътища</div><div class="ft-p">Маршрут Смолян → Триград → Доспат с GPS tracks и снимки...</div>
+        <div class="ft-a"><span class="link" onclick="openProfile('marin')">Марин Тодоров</span> <span class="lv lv-m">🟠 МЕРАКЛИЯ</span> · преди 2 дни</div></div>
+        <div class="ft-s"><span class="ft-n">12</span><span class="ft-l">💬</span></div>
+      </div>
+      <div class="ft-react">
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">👍 8</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🔧 Имах същото 2</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🙏 Мерси 5</button>
+      </div>
+    </div>
+
+    <!-- Chat zone threads -->
+    <div class="ft" data-zone="chat" data-type="e" data-tags="среща,кафе,софия" onclick="toggleThreadV10(this)">
+      <div class="ft-top">
+        <span class="ft-type ft-type-e">📝 ОПИТ</span>
+        <span class="ft-tag">СБИРКА</span><span class="ft-zone-tag" data-z="chat">☕ Чат</span>
+        <div class="ft-c"><div class="ft-t">Неделна кафе-сбирка София — кой идва?</div><div class="ft-p">Тази неделя от 10:00 в Garage Cafe. Носете добро настроение...</div>
+        <div class="ft-a"><span class="link" onclick="openProfile('dimitar')">Димитър Колев</span> <span class="lv lv-m">🟠 МЕРАКЛИЯ</span> · преди 5 часа</div></div>
+        <div class="ft-s"><span class="ft-n">7</span><span class="ft-l">💬</span></div>
+      </div>
+      <div class="ft-react">
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">👍 5</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🔧 Имах същото</button>
+        <button class="ft-react-btn" onclick="event.stopPropagation();quickReact(this)">🙏 Мерси 3</button>
+      </div>
+    </div>
+
+    </div><!-- /forumThreads -->
+  </div>
+
+  <!-- ========== МАЗЕТО ========== -->
+  <div class="tab" id="t-maze">
+    <div class="sec-title">🔩 МАЗЕТО <span style="font:400 12px 'Exo 2',sans-serif;color:var(--text2);letter-spacing:0">— Употребявано, гаражно, от хората</span></div>
+    <div class="mz-tabs" id="mzTabs">
+      <div class="mzt" data-s="dna">🧬 ДНК</div>
+      <div class="mzt on" data-s="parts">⚙️ Части</div>
+      <div class="mzt" data-s="motos">🏍️ Мотори</div>
+      <div class="mzt" data-s="gear">🧤 Екипировка</div>
+      <div class="mzt" data-s="olx">🔗 OLX / Mobile.bg</div>
+    </div>
+
+    <!-- ДНК Каталог -->
+    <div class="mz-sub" id="s-dna">
+      <div class="dna-garage-shortcut" id="dnaGarageShortcut" style="display:none" onclick="dnaFromGarage()">
+        🏍️ <span><strong id="dnaGarageBikeName">—</strong> — виж ДНК-то на мотора ти</span>
+        <span style="margin-left:auto;color:var(--green);font-size:14px">→</span>
+      </div>
+      <div class="dna-bc" id="dnaBc" style="display:none">
+        <span class="dna-bc-home" onclick="dnaHome()">← Всички модели</span>
+        <span class="dna-bc-sep" id="dnaBcSep1" style="display:none">/</span>
+        <span class="dna-bc-cur" id="dnaBcModel" style="display:none"></span>
+        <span class="dna-bc-sep" id="dnaBcSep2" style="display:none">/</span>
+        <span class="dna-bc-cur" id="dnaBcSystem" style="display:none"></span>
+      </div>
+      <div id="dnaModels">
+        <div style="margin-bottom:14px">
+          <div class="sec-title" style="font-size:20px">🧬 ДНК КАТАЛОГ</div>
+          <div style="font:400 12px 'Exo 2',sans-serif;color:var(--text2);margin-top:-8px;margin-bottom:14px">Избери модел и виж какво има под калниците</div>
+        </div>
+        <div class="dna-models" id="dnaModelGrid"></div>
+      </div>
+      <div id="dnaSystems" style="display:none">
+        <div id="dnaSystemsHeader"></div>
+        <div class="dna-systems" id="dnaSystemGrid"></div>
+        <div id="dnaBuildThreads" style="margin-top:16px"></div>
+      </div>
+      <div id="dnaComponents" style="display:none">
+        <div id="dnaComponentsHeader"></div>
+        <div class="dna-comps" id="dnaCompList"></div>
+      </div>
+    </div>
+
+    <!-- Части -->
+    <div class="mz-sub on" id="s-parts">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font:500 11px 'JetBrains Mono',monospace;color:var(--text2)">Обяви от общността + магазини</div>
+        <button class="btn btn-o btn-primary-cta" onclick="showListingForm()">＋ Нова обява</button>
+      </div>
+      <div id="listingFormArea"></div>
+      <div id="dynamicListings"></div>
+      <div style="font:700 11px 'Bebas Neue',sans-serif;letter-spacing:1px;color:var(--text2);margin:16px 0 8px;border-top:1px solid var(--border);padding-top:12px">ОТ МАГАЗИНИТЕ</div>
+      <div class="g-maze">
+        <div class="mc" onclick="openProfile('edimoto')">
+          <div class="mc-top"><span class="mc-em">🏋️</span><span class="price">320 лв <span class="dual">/ 164 €</span></span></div>
+          <div class="mc-nm">Showa амортисьор заден</div>
+          <div class="mc-d">Свален от YZ250F 2020. 15,000 км, работи перфектно. <span class="chip">YZ250F</span></div>
+          <div class="mc-sell">🏍️ <span class="sn" onclick="event.stopPropagation();openProfile('edimoto')">EdiMoto</span> <span class="badge b-ver" style="font-size:9px">✓</span> · 📍 София</div>
+          <span class="badge b-cpo" style="display:block;margin-top:6px;width:fit-content">✓ Проверено от МотоХаус</span>
+          <div style="margin-top:6px;padding:5px 8px;background:rgba(90,138,60,.05);border-radius:4px;font-size:11px;color:var(--text2);border:1px solid rgba(90,138,60,.1)"><span style="color:var(--green);font-weight:600">Нов:</span> Showa заден — <strong>890 лв / 455 €</strong> в МотоХаус</div>
+          <div style="margin-top:8px"><button class="btn btn-o" style="font-size:10px" onclick="event.stopPropagation()">Прати съобщение</button></div>
+        </div>
+        <div class="mc">
+          <div class="mc-top"><span class="mc-em">⚡</span><span class="price">85 лв <span class="dual">/ 43 €</span></span></div>
+          <div class="mc-nm">CDI модул Honda CRF</div>
+          <div class="mc-d">Оригинален, от CRF250R 2018. Работи. <span class="chip">Honda CRF</span></div>
+          <div class="mc-sell">🏍️ <span class="sn" onclick="event.stopPropagation();openProfile('edimoto')">EdiMoto</span> · 📍 София</div>
+          <div style="margin-top:8px"><button class="btn btn-o" style="font-size:10px">Прати съобщение</button></div>
+        </div>
+        <div class="mc">
+          <div class="mc-top"><span class="mc-em">⚙️</span><span class="price">90 лв <span class="dual">/ 46 €</span></span></div>
+          <div class="mc-nm">Контратежест YZ250F</div>
+          <div class="mc-d">Свален при ремонт — стар, но в рамка. Промерен. <span class="chip">YZ250F</span></div>
+          <div class="mc-sell">🏍️ <span class="sn" onclick="event.stopPropagation();openProfile('marin')">Марин Тодоров</span> <span class="lv lv-m">🟠</span> · 📍 Бургас</div>
+          <div style="margin-top:6px;padding:5px 8px;background:rgba(90,138,60,.05);border-radius:4px;font-size:11px;color:var(--text2);border:1px solid rgba(90,138,60,.1)"><span style="color:var(--green);font-weight:600">Нов:</span> Контратежест — <strong>140 лв / 72 €</strong> в МотоХаус</div>
+          <div style="margin-top:8px"><button class="btn btn-o" style="font-size:10px">Прати съобщение</button></div>
+        </div>
+        <div class="mc">
+          <div class="mc-top"><span class="mc-em">🔧</span><span class="price">150 лв <span class="dual">/ 77 €</span></span></div>
+          <div class="mc-nm">Ръчки Renthal Twinwall</div>
+          <div class="mc-d">2 сезона, леко огънати. С протектори и жилки.</div>
+          <div class="mc-sell">🏍️ <span class="sn">Стоян Николов</span> <span class="lv lv-n">🟤</span> · 📍 Бургас</div>
+          <div style="margin-top:8px"><button class="btn btn-o" style="font-size:10px">Прати съобщение</button></div>
+        </div>
+        <div class="mc">
+          <div class="mc-top"><span class="mc-em">⚙️</span><span class="price">220 лв <span class="dual">/ 112 €</span></span></div>
+          <div class="mc-nm">Радиатор TPI 300 EXC</div>
+          <div class="mc-d">Ляв, оригинален. Без пукнатини, тестван. <span class="chip">KTM EXC</span></div>
+          <div class="mc-sell">🏍️ <span class="sn" onclick="event.stopPropagation();openProfile('edimoto')">EdiMoto</span> <span class="badge b-ver" style="font-size:9px">✓</span> · 📍 София</div>
+          <span class="badge b-cpo" style="display:block;margin-top:6px;width:fit-content">✓ Проверено от МотоХаус</span>
+          <div style="margin-top:8px"><button class="btn btn-o" style="font-size:10px">Прати съобщение</button></div>
+        </div>
+        <div class="mc">
+          <div class="mc-top"><span class="mc-em">🏋️</span><span class="price">280 лв <span class="dual">/ 143 €</span></span></div>
+          <div class="mc-nm">WP вилка крак ляв</div>
+          <div class="mc-d">XPLOR 48mm, от KTM 350 EXC-F 2021. Нужда от семеринги.</div>
+          <div class="mc-sell">🏍️ <span class="sn">Георги Димитров</span> <span class="lv lv-p">🔵</span> · 📍 В. Търново</div>
+          <div style="margin-top:8px"><button class="btn btn-o" style="font-size:10px">Прати съобщение</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Мотори -->
+    <div class="mz-sub" id="s-motos">
+      <!-- Filter Row 1: Skill Level -->
+      <div class="mf-row" id="mfLevel">
+        <div class="mf" data-level="beginner">🟢 За начинаещи</div>
+        <div class="mf" data-level="advanced">🟠 Каращ</div>
+        <div class="mf" data-level="pro">🔴 Можач</div>
+      </div>
+      <!-- Filter Row 2: Type -->
+      <div class="mf-row" id="mfType">
+        <div class="mf" data-type="cross">🏁 Крос</div>
+        <div class="mf" data-type="enduro">🌲 Ендуро</div>
+        <div class="mf" data-type="dual">🛣️ Дуал спорт</div>
+        <div class="mf" data-type="tour">🏔️ Туризъм</div>
+      </div>
+      <div class="mf-count" id="mfCount" style="display:none;font:500 11px 'JetBrains Mono',monospace;color:var(--text2);margin-bottom:12px"></div>
+      <div class="g-maze" id="motoGrid">
+
+        <!-- 1. Yamaha YZ250F 2021 -->
+        <div class="mc" data-level="pro" data-type="cross enduro" onclick="toggleMoto(this)">
+          <div class="mc-top"><span class="mc-em">🏍️</span><span class="price">8 500 лв <span class="dual">/ 4 346 €</span></span></div>
+          <div class="mc-nm">Yamaha YZ250F 2021</div>
+          <div class="mc-d">Крос машина, може за гора с ендуро пакет. 90 моточаса, поддържана.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin:6px 0">
+            <span class="dna dna-pro">🔴 Можач</span>
+            <span class="dna dna-cross">🏁 Крос</span>
+            <span class="dna dna-enduro">🌲 Ендуро</span>
+          </div>
+          <div class="mc-sell">📍 Пловдив · <span class="sn">Иван Петров</span> <span class="lv lv-p">🔵</span></div>
+          <span class="mc-expand">подробности ↓</span>
+          <div class="mc-detail">
+            <div class="mc-section">
+              <div class="mc-sec-title">🔧 Майстор препоръка</div>
+              <div class="mc-sec-body">Добра машина за опитни. Вилката иска ревизия на всеки 80 моточаса. За ендуро — 18" задна гума и мека настройка на окачването. <span class="link" onclick="event.stopPropagation();openProfile('pesho')">Пешо Механика</span> прави пълна ревизия за 280 лв.</div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">🏪 Пакет от магазин</div>
+              <div class="mc-sec-body"><span class="link" onclick="event.stopPropagation();openProfile('motohaus')">МотоХаус</span>: Ендуро конверсия — предпазители Acerbis + Michelin Enduro Medium + стойка = <strong style="color:var(--orange)">420 лв / 215 €</strong></div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">💬 Форум теми за модела</div>
+              <div class="mc-sec-body">
+                <div style="margin-bottom:4px">• <span class="link" onclick="event.stopPropagation();go('forum')">YZ250F вибрация на 6000 оборота</span> — ✓ решено, 34 отговора</div>
+                <div>• <span class="link" onclick="event.stopPropagation();go('forum')">YZ250F vs CRF250R за ендуро</span> — 12 отговора</div>
+              </div>
+            </div>
+            <div class="mc-collapse" onclick="event.stopPropagation();toggleMoto(this.closest('.mc'))">▲ скрий</div>
+          </div>
+        </div>
+
+        <!-- 2. Yamaha WR450F 2022 -->
+        <div class="mc" data-level="pro" data-type="enduro" onclick="toggleMoto(this)">
+          <div class="mc-top"><span class="mc-em">🏍️</span><span class="price">11 200 лв <span class="dual">/ 5 727 €</span></span></div>
+          <div class="mc-nm">Yamaha WR450F 2022</div>
+          <div class="mc-d">Сериозна ендуро машина. 60 моточаса, пълна документация, rally kit.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin:6px 0">
+            <span class="dna dna-pro">🔴 Можач</span>
+            <span class="dna dna-enduro">🌲 Ендуро</span>
+          </div>
+          <div class="mc-sell">📍 София · <span class="sn">Георги Димов</span> <span class="lv lv-p">🔵</span></div>
+          <span class="mc-expand">подробности ↓</span>
+          <div class="mc-detail">
+            <div class="mc-section">
+              <div class="mc-sec-title">🔧 Майстор препоръка</div>
+              <div class="mc-sec-body">450-ка не е за начинаещи — мощна и тежка. Перфектна за hard enduro. Проверявай клапаните на 40ч. Окачването е factory — не пипай ако не знаеш. <span class="link" onclick="event.stopPropagation();openProfile('pesho')">Пешо</span> може да я настрои по теглото ти.</div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">🏪 Пакет от магазин</div>
+              <div class="mc-sec-body"><span class="link" onclick="event.stopPropagation();openProfile('motohaus')">МотоХаус</span>: WR450 rally пакет — навигация Roadbook + протектор картер + handguards = <strong style="color:var(--orange)">890 лв / 455 €</strong></div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">💬 Форум теми за модела</div>
+              <div class="mc-sec-body">
+                <div style="margin-bottom:4px">• <span class="link" onclick="event.stopPropagation();go('forum')">WR450F rally conversion — guide</span> — 28 отговора</div>
+                <div>• <span class="link" onclick="event.stopPropagation();go('forum')">WR450 vs KTM 450 EXC — мнения</span> — 45 отговора</div>
+              </div>
+            </div>
+            <div class="mc-collapse" onclick="event.stopPropagation();toggleMoto(this.closest('.mc'))">▲ скрий</div>
+          </div>
+        </div>
+
+        <!-- 3. Honda CRF300L 2023 -->
+        <div class="mc" data-level="beginner" data-type="dual" onclick="toggleMoto(this)">
+          <div class="mc-top"><span class="mc-em">🏍️</span><span class="price">6 800 лв <span class="dual">/ 3 477 €</span></span></div>
+          <div class="mc-nm">Honda CRF300L 2023</div>
+          <div class="mc-d">Дуал спорт, street legal, перфектен за начинаещи. Гаранция до 2025.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin:6px 0">
+            <span class="dna dna-beginner">🟢 Начинаещ</span>
+            <span class="dna dna-dual">🛣️ Дуал спорт</span>
+          </div>
+          <div class="mc-sell">📍 Варна · <span class="sn">Димитър Колев</span> <span class="lv lv-m">🟠</span></div>
+          <span class="mc-expand">подробности ↓</span>
+          <div class="mc-detail">
+            <div class="mc-section">
+              <div class="mc-sec-title">🔧 Майстор препоръка</div>
+              <div class="mc-sec-body">Идеален за първи мотор — лек, нисък, надежден. Може и по асфалт и по черен път. Сервизни интервали на 6000 км. Единствен минус — окачването е меко за hard offroad. <span class="link" onclick="event.stopPropagation();openProfile('manolov')">Манолов</span> препоръчва за учениците си.</div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">🏪 Пакет от магазин</div>
+              <div class="mc-sec-body"><span class="link" onclick="event.stopPropagation();openProfile('edimoto_shop')">EdiMoto</span>: Начинаещ пакет — протектор за ръце + стойка + масло комплект = <strong style="color:var(--orange)">185 лв / 95 €</strong></div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">💬 Форум теми за модела</div>
+              <div class="mc-sec-body">
+                <div style="margin-bottom:4px">• <span class="link" onclick="event.stopPropagation();go('forum')">CRF300L — най-добрият първи мотор?</span> — 67 отговора</div>
+                <div>• <span class="link" onclick="event.stopPropagation();go('forum')">CRF300L offroad upgrade — какво слагаме</span> — 23 отговора</div>
+              </div>
+            </div>
+            <div class="mc-collapse" onclick="event.stopPropagation();toggleMoto(this.closest('.mc'))">▲ скрий</div>
+          </div>
+        </div>
+
+        <!-- 4. Yamaha TTR250 2019 -->
+        <div class="mc" data-level="beginner" data-type="tour" onclick="toggleMoto(this)">
+          <div class="mc-top"><span class="mc-em">🏍️</span><span class="price">3 200 лв <span class="dual">/ 1 636 €</span></span></div>
+          <div class="mc-nm">Yamaha TTR250 2019</div>
+          <div class="mc-d">Бюджетен туринг ендуро. Спокоен мотор за гора и черни пътища.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin:6px 0">
+            <span class="dna dna-beginner">🟢 Начинаещ</span>
+            <span class="dna dna-tour">🏔️ Туризъм</span>
+          </div>
+          <div class="mc-sell">📍 Пазарджик · <span class="sn">Тодор Ванков</span> <span class="lv lv-n">🟤</span></div>
+          <span class="mc-expand">подробности ↓</span>
+          <div class="mc-detail">
+            <div class="mc-section">
+              <div class="mc-sec-title">🔧 Майстор препоръка</div>
+              <div class="mc-sec-body">Вечен двигател — не се чупи. Перфектен за уикенд разходки в гората. Не е бърз но е сигурен. Проверявай само масло и верига. За цената — страхотна сделка.</div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">🏪 Пакет от магазин</div>
+              <div class="mc-sec-body"><span class="link" onclick="event.stopPropagation();openProfile('motohaus')">МотоХаус</span>: TTR сервиз пакет — масло Motul 10W40 + филтър + свещ + верига DID = <strong style="color:var(--orange)">95 лв / 49 €</strong></div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">💬 Форум теми за модела</div>
+              <div class="mc-sec-body">
+                <div style="margin-bottom:4px">• <span class="link" onclick="event.stopPropagation();go('forum')">TTR250 — бюджетен гора мотор</span> — 19 отговора</div>
+                <div>• <span class="link" onclick="event.stopPropagation();go('forum')">Най-евтин ендуро мотор за начинаещ</span> — 51 отговора</div>
+              </div>
+            </div>
+            <div class="mc-collapse" onclick="event.stopPropagation();toggleMoto(this.closest('.mc'))">▲ скрий</div>
+          </div>
+        </div>
+
+        <!-- 5. KTM 350 EXC-F 2022 -->
+        <div class="mc" data-level="pro" data-type="enduro" onclick="toggleMoto(this)">
+          <div class="mc-top"><span class="mc-em">🏍️</span><span class="price">13 500 лв <span class="dual">/ 6 903 €</span></span></div>
+          <div class="mc-nm">KTM 350 EXC-F 2022</div>
+          <div class="mc-d">Top shelf ендуро. WP XPLOR вилка, фабрично окачване. 45 моточаса.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin:6px 0">
+            <span class="dna dna-pro">🔴 Можач</span>
+            <span class="dna dna-enduro">🌲 Ендуро</span>
+          </div>
+          <div class="mc-sell">📍 Русе · <span class="sn">Красимир Стоев</span> <span class="lv lv-p">🔵</span></div>
+          <span class="badge b-cpo" style="display:block;margin-top:6px;width:fit-content">✓ Проверено от МотоХаус</span>
+          <span class="mc-expand">подробности ↓</span>
+          <div class="mc-detail">
+            <div class="mc-section">
+              <div class="mc-sec-title">🔧 Майстор препоръка</div>
+              <div class="mc-sec-body">350-ката е златната среда — по-лека от 450 но с достатъчно мощност. WP XPLOR е фабрично перфектна — <span class="link" onclick="event.stopPropagation();openProfile('pesho')">Пешо</span> казва да не я пипаш освен ревизия на 100ч. Клапани на 60ч задължително.</div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">🏪 Пакет от магазин</div>
+              <div class="mc-sec-body"><span class="link" onclick="event.stopPropagation();openProfile('motohaus')">МотоХаус</span>: KTM EXC пакет — въздушен филтър Twin Air + масло Motorex + уплътнения = <strong style="color:var(--orange)">210 лв / 107 €</strong></div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">💬 Форум теми за модела</div>
+              <div class="mc-sec-body">
+                <div style="margin-bottom:4px">• <span class="link" onclick="event.stopPropagation();go('forum')">KTM 350 EXC-F — перфектният ендуро мотор?</span> — 38 отговора</div>
+                <div>• <span class="link" onclick="event.stopPropagation();go('forum')">350 vs 300 — кое е по-добре за hard enduro</span> — 29 отговора</div>
+              </div>
+            </div>
+            <div class="mc-collapse" onclick="event.stopPropagation();toggleMoto(this.closest('.mc'))">▲ скрий</div>
+          </div>
+        </div>
+
+        <!-- 6. Honda CRF150R 2020 -->
+        <div class="mc" data-level="beginner" data-type="cross" onclick="toggleMoto(this)">
+          <div class="mc-top"><span class="mc-em">🏍️</span><span class="price">4 100 лв <span class="dual">/ 2 096 €</span></span></div>
+          <div class="mc-nm">Honda CRF150R 2020</div>
+          <div class="mc-d">Мотокрос за начинаещи и юноши. Лек, нисък, лесен за контрол.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin:6px 0">
+            <span class="dna dna-beginner">🟢 Начинаещ</span>
+            <span class="dna dna-cross">🏁 Крос</span>
+          </div>
+          <div class="mc-sell">📍 Стара Загора · <span class="sn">Петко Минев</span> <span class="lv lv-m">🟠</span></div>
+          <span class="mc-expand">подробности ↓</span>
+          <div class="mc-detail">
+            <div class="mc-section">
+              <div class="mc-sec-title">🔧 Майстор препоръка</div>
+              <div class="mc-sec-body">Перфектен за учене — 150сс, лесен за контрол, евтина поддръжка. <span class="link" onclick="event.stopPropagation();openProfile('manolov')">Манолов</span> ги ползва за тренировки на новобранци. Сервиз на 15ч. Ако детето ти расте — после минаваш на 250.</div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">🏪 Пакет от магазин</div>
+              <div class="mc-sec-body"><span class="link" onclick="event.stopPropagation();openProfile('edimoto_shop')">EdiMoto</span>: CRF150 старт пакет — каска + ръкавици + гащеризон = <strong style="color:var(--orange)">380 лв / 194 €</strong></div>
+            </div>
+            <div class="mc-section">
+              <div class="mc-sec-title">💬 Форум теми за модела</div>
+              <div class="mc-sec-body">
+                <div style="margin-bottom:4px">• <span class="link" onclick="event.stopPropagation();go('forum')">CRF150R за дете 12г — подходящ ли е?</span> — 22 отговора</div>
+                <div>• <span class="link" onclick="event.stopPropagation();go('forum')">Най-добрият крос мотор за начинаещ</span> — 41 отговора</div>
+              </div>
+            </div>
+            <div class="mc-collapse" onclick="event.stopPropagation();toggleMoto(this.closest('.mc'))">▲ скрий</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Екипировка -->
+    <div class="mz-sub" id="s-gear">
+      <div class="g-maze">
+        <div class="mc">
+          <div class="mc-top"><span class="mc-em">🥾</span><span class="price">340 лв <span class="dual">/ 174 €</span></span></div>
+          <div class="mc-nm">Alpinestars Tech 7 р.44</div>
+          <div class="mc-d">1 сезон, добро състояние. Подметка ОК.</div>
+          <div class="mc-sell">🏍️ <span class="sn">Стоян Николов</span> <span class="lv lv-n">🟤</span> · 📍 Бургас</div>
+          <div style="margin-top:8px"><button class="btn btn-o" style="font-size:10px">Прати съобщение</button></div>
+        </div>
+        <div class="mc">
+          <div class="mc-top"><span class="mc-em">🧤</span><span class="price">45 лв <span class="dual">/ 23 €</span></span></div>
+          <div class="mc-nm">Fox ръкавици XL</div>
+          <div class="mc-d">Нови, грешен размер. Неотваряни.</div>
+          <div class="mc-sell">🏍️ <span class="sn link" onclick="openProfile('marin')">Марин Тодоров</span> <span class="lv lv-m">🟠</span> · 📍 Бургас</div>
+          <div style="margin-top:8px"><button class="btn btn-o" style="font-size:10px">Прати съобщение</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OLX / Mobile.bg -->
+    <div class="mz-sub" id="s-olx">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="olx-c"><span class="olx-src olx-o">OLX</span><div class="olx-i"><div class="olx-n">Michelin Enduro Medium 140/80-18</div><div class="olx-p">120 лв / 61 € · София</div></div><button class="olx-b">Виж обявата →</button></div>
+        <div class="olx-c"><span class="olx-src olx-m">Mobile.bg</span><div class="olx-i"><div class="olx-n">Yamaha YZ250F 2021 — пълна документация</div><div class="olx-p">14 500 лв / 7 416 € · Пловдив</div></div><button class="olx-b">Виж обявата →</button></div>
+        <div class="olx-c"><span class="olx-src olx-o">OLX</span><div class="olx-i"><div class="olx-n">Предпазители Acerbis KTM EXC комплект</div><div class="olx-p">85 лв / 43 € · Варна</div></div><button class="olx-b">Виж обявата →</button></div>
+        <div class="olx-c"><span class="olx-src olx-m">Mobile.bg</span><div class="olx-i"><div class="olx-n">Fantic XEF 310 2024 — 1200 км, гаранция</div><div class="olx-p">16 800 лв / 8 591 € · София</div></div><button class="olx-b">Виж обявата →</button></div>
+        <div class="olx-c"><span class="olx-src olx-o">OLX</span><div class="olx-i"><div class="olx-n">Ботуши Alpinestars Tech 5 р.43</div><div class="olx-p">280 лв / 143 € · Бургас</div></div><button class="olx-b">Виж обявата →</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Магазини и Майстори са в Директория (филтри) -->
+
+  <!-- ========== АКАДЕМИЯ ========== -->
+  <div class="tab" id="t-academy">
+    <div class="sec-title">🎓 АКАДЕМИЯ <span style="font:400 12px 'Exo 2',sans-serif;color:var(--text2);letter-spacing:0">— Обучения, треньори и турове</span></div>
+
+    <!-- Subtabs -->
+    <div class="ac-tabs" id="acadTabs">
+      <div class="act on" data-ac="trainings">🏅 ТРЕНИРОВКИ</div>
+      <div class="act" data-ac="trainers">👨‍🏫 ТРЕНЬОРИ</div>
+      <div class="act" data-ac="tours">🏔️ ТУРОВЕ</div>
+    </div>
+
+    <!-- ===== ТРЕНИРОВКИ ===== -->
+    <div class="ac-sub on" id="ac-trainings">
+
+      <!-- Featured: Мото Академия на Димитър Манолов -->
+      <div class="ac-featured">
+        <span class="ac-badge">🏆 ОФИЦИАЛЕН ПАРТНЬОР</span>
+        <h3>🏍️ МОТО АКАДЕМИЯ НА ДИМИТЪР МАНОЛОВ</h3>
+        <p style="font:500 13px 'Exo 2',sans-serif;color:var(--earth);margin-bottom:4px">📍 Нови Хан, област София — Крос трасета</p>
+        <p>Единствената сертифицирана офроуд школа в България. Димитър Манолов — 15+ години опит, състезател, треньор. Крос трасета за малки и големи, новобранци и напреднали. Мотори под наем, екипировка, застраховка включени. <strong style="color:var(--orange)">Записвания всеки ден 8-18ч.</strong></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn" onclick="showToast('📞 Обаждане на +359 88 123 4567...')">📞 Обади се</button>
+          <button class="btn" onclick="showToast('✅ Записан! Ще получиш потвърждение.')">🏍️ Запиши ме на тренировка</button>
+          <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text2)" onclick="showToast('📍 Навигация към Нови Хан...')">📍 Как да стигна</button>
+        </div>
+      </div>
+
+      <!-- Training sessions grid -->
+      <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:2px;color:var(--text2);margin-bottom:12px;text-transform:uppercase">ПРЕДСТОЯЩИ ТРЕНИРОВКИ</div>
+      <div class="g-dir">
+
+        <!-- Session 1: Деца -->
+        <div class="card">
+          <div class="cal-date">
+            <div class="cal-d">22</div>
+            <div class="cal-m">МАР</div>
+          </div>
+          <div style="flex:1">
+            <div style="font:700 14px 'Exo 2',sans-serif;color:var(--text);margin-bottom:4px">🧒 Деца 6-14 години</div>
+            <div class="meta">Мото Академия на Димитър Манолов · Нови Хан</div>
+            <div style="margin:6px 0">
+              <span class="dna dna-beginner">🟢 Начинаещ</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <span style="font:600 12px 'Exo 2',sans-serif;color:var(--text2)">👥 12 места</span>
+              <span class="price" style="font:700 16px 'Bebas Neue',sans-serif;color:var(--orange);letter-spacing:1px">50 лв</span>
+              <button class="btn" onclick="joinEvent('training-22mar-kids',this)">Записвам се</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Session 2: Начинаещи възрастни -->
+        <div class="card">
+          <div class="cal-date">
+            <div class="cal-d">23</div>
+            <div class="cal-m">МАР</div>
+          </div>
+          <div style="flex:1">
+            <div style="font:700 14px 'Exo 2',sans-serif;color:var(--text);margin-bottom:4px">🏍️ Начинаещи възрастни</div>
+            <div class="meta">Мото Академия на Димитър Манолов · Нови Хан</div>
+            <div style="margin:6px 0">
+              <span class="dna dna-beginner">🟢 Начинаещ</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <span style="font:600 12px 'Exo 2',sans-serif;color:var(--text2)">👥 8 места</span>
+              <span class="price" style="font:700 16px 'Bebas Neue',sans-serif;color:var(--orange);letter-spacing:1px">80 лв</span>
+              <button class="btn" onclick="joinEvent('training-23mar-begin',this)">Записвам се</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Session 3: Напреднала техника с Величко -->
+        <div class="card">
+          <div class="cal-date">
+            <div class="cal-d">29</div>
+            <div class="cal-m">МАР</div>
+          </div>
+          <div style="flex:1">
+            <div style="font:700 14px 'Exo 2',sans-serif;color:var(--text);margin-bottom:4px">⚡ Напреднала техника с Величко</div>
+            <div class="meta">Величко Манолов · Карлово</div>
+            <div style="margin:6px 0">
+              <span class="dna dna-advanced">🟠 Можач</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <span style="font:600 12px 'Exo 2',sans-serif;color:var(--text2)">👥 6 места</span>
+              <span class="price" style="font:700 16px 'Bebas Neue',sans-serif;color:var(--orange);letter-spacing:1px">150 лв</span>
+              <button class="btn" onclick="joinEvent('training-29mar-adv',this)">Записвам се</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== ТРЕНЬОРИ ===== -->
+    <div class="ac-sub" id="ac-trainers">
+      <div class="g-dir">
+
+        <!-- Trainer 1: Димитър Манолов — featured -->
+        <div class="ac-trainer featured-orange">
+          <div style="position:absolute;top:10px;right:10px;background:var(--orange);color:#fff;font:700 9px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:3px;letter-spacing:1px" class="ac-badge">🏆 ОСНОВАТЕЛ</div>
+          <div class="avatar">🏍️</div>
+          <h4>Димитър Манолов</h4>
+          <div class="role" style="color:var(--orange)">ГЛАВЕН ТРЕНЬОР · МОТО АКАДЕМИЯ</div>
+          <div class="spec">15+ години офроуд опит. Сертифициран инструктор. Състезател BG-X Enduro. Крос трасета в Нови Хан за малки, големи, новобранци и напреднали.</div>
+          <div class="rating">★ 5.0 <span style="color:var(--text2);font-size:11px">(48 отзива)</span></div>
+          <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+            <button class="btn" onclick="showToast('📞 Обаждане на Димитър...')">📞 Свържи се</button>
+            <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text2)" onclick="showToast('📋 Профил на Димитър Манолов')">Профил</button>
+          </div>
+        </div>
+
+        <!-- Trainer 2: Величко Манолов — featured earth -->
+        <div class="ac-trainer featured-earth" style="position:relative">
+          <div style="position:absolute;top:10px;right:10px;background:var(--earth);color:#fff;font:700 9px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:3px;letter-spacing:1px">👑 ЛЕГЕНДА</div>
+          <div class="avatar" style="background:rgba(196,154,108,.2)">🏆</div>
+          <h4>Величко Манолов</h4>
+          <div class="role" style="color:var(--earth)">ХАРД ЕНДУРО ЛЕГЕНДА</div>
+          <div class="spec">20+ години. Многократен шампион. Erzbergrodeo финалист. Специалност: напреднала техника, хард ендуро.</div>
+          <div class="rating">★ 5.0 <span style="color:var(--text2);font-size:11px">(62 отзива)</span></div>
+          <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+            <button class="btn" onclick="showToast('📞 Обаждане на Величко...')">📞 Свържи се</button>
+            <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text2)" onclick="openProfile('manolov')">Профил</button>
+          </div>
+        </div>
+
+        <!-- Trainer 3: Иван Стойчев -->
+        <div class="ac-trainer" style="position:relative">
+          <div class="avatar" style="background:rgba(90,138,60,.15)">🌲</div>
+          <h4>Иван Стойчев</h4>
+          <div class="role" style="color:var(--green)">МЛАДШИ ИНСТРУКТОР</div>
+          <div class="spec">5 години опит. Специалност: ендуро навигация, GPS маршрути. Помощник-треньор в Мото Академия.</div>
+          <div class="rating">★ 4.8 <span style="color:var(--text2);font-size:11px">(23 отзива)</span></div>
+          <div style="display:flex;gap:6px;justify-content:center">
+            <button class="btn" onclick="showToast('📞 Обаждане на Иван...')">📞 Свържи се</button>
+          </div>
+        </div>
+
+        <!-- Trainer 4: Петър Димитров -->
+        <div class="ac-trainer" style="position:relative">
+          <div class="avatar" style="background:rgba(232,98,44,.1)">🏁</div>
+          <h4>Петър Димитров</h4>
+          <div class="role" style="color:var(--orange)">МОТОКРОС ИНСТРУКТОР</div>
+          <div class="spec">8 години състезателен мотокрос. Специалност: скокове, писта техника, подготовка за състезания.</div>
+          <div class="rating">★ 4.7 <span style="color:var(--text2);font-size:11px">(17 отзива)</span></div>
+          <div style="display:flex;gap:6px;justify-content:center">
+            <button class="btn" onclick="showToast('📞 Обаждане на Петър...')">📞 Свържи се</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== ТУРОВЕ ===== -->
+    <div class="ac-sub" id="ac-tours">
+      <div style="display:flex;flex-direction:column;gap:12px">
+
+        <!-- Tour 1: Рила Уикенд -->
+        <div class="ac-tour" onclick="this.classList.toggle('open')">
+          <div class="ac-tour-head">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div class="cal-date">
+                <div class="cal-d">29-30</div>
+                <div class="cal-m">МАР</div>
+              </div>
+              <div style="flex:1">
+                <div style="font:700 16px 'Exo 2',sans-serif;color:var(--text);margin-bottom:4px">🏔️ Рила Уикенд Ендуро</div>
+                <div class="meta">Самоков → Мальовица → Рилски езера</div>
+                <div style="margin:6px 0">
+                  <span class="dna dna-advanced">🟠 Средно ниво</span>
+                  <span class="dna dna-enduro">🌲 Ендуро</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                  <span style="font-size:12px;color:var(--text2)">📅 2 дни</span>
+                  <span style="font-size:12px;color:var(--text2)">👥 8 места</span>
+                  <span style="font:700 18px 'Bebas Neue',sans-serif;color:var(--orange);letter-spacing:1px">280 лв</span>
+                </div>
+                <div class="fc-more">▼ Подробности</div>
+              </div>
+            </div>
+          </div>
+          <div class="ac-tour-detail">
+            <div style="padding-top:12px">
+              <div class="mc-section">
+                <div class="mc-sec-title">🗺️ МАРШРУТ</div>
+                <div class="mc-sec-body">Ден 1: Самоков → Говедарци → Мальовица (горски пътища, 65 км). Нощувка в хижа Мальовица.<br>Ден 2: Мальовица → Седемте езера → Самоков (алпийски пътеки, 50 км). Обяд при езерата.</div>
+              </div>
+              <div class="mc-section">
+                <div class="mc-sec-title">✅ ВКЛЮЧЕНО В ЦЕНАТА</div>
+                <div class="mc-sec-body">• Водач с GPS навигация целия маршрут<br>• Нощувка в хижа + вечеря и закуска<br>• Техническа поддръжка по трасето<br>• Застраховка участник<br>• Сувенир и снимки от турнето</div>
+              </div>
+              <div class="mc-section">
+                <div class="mc-sec-title">⚠️ ИЗИСКВАНИЯ</div>
+                <div class="mc-sec-body">• Ендуро мотор (наем от 80 лв/ден)<br>• Пълна екипировка: каска, ботуши, ръкавици, протектори<br>• Минимум 1 година офроуд опит<br>• Добра физическа форма</div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
+                <button class="btn" onclick="showToast('✅ Записан за Рила Уикенд Ендуро · 29-30.03!')">🏍️ Карай с нас</button>
+                <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text2)" onclick="showToast('📞 Обаждане на организатора...')">📞 Въпроси</button>
+              </div>
+              <div class="ac-tour-collapse" onclick="event.stopPropagation()">▲ Скрий</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tour 2: Стара Планина еднодневен -->
+        <div class="ac-tour" onclick="this.classList.toggle('open')">
+          <div class="ac-tour-head">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div class="cal-date">
+                <div class="cal-d">05</div>
+                <div class="cal-m">АПР</div>
+              </div>
+              <div style="flex:1">
+                <div style="font:700 16px 'Exo 2',sans-serif;color:var(--text);margin-bottom:4px">⛰️ Стара Планина Еднодневен</div>
+                <div class="meta">Карлово → Амбарица → Шипка</div>
+                <div style="margin:6px 0">
+                  <span class="dna dna-beginner">🟢 Начинаещи</span>
+                  <span class="dna dna-tour">🏔️ Туризъм</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                  <span style="font-size:12px;color:var(--text2)">📅 1 ден</span>
+                  <span style="font-size:12px;color:var(--text2)">👥 12 места</span>
+                  <span style="font:700 18px 'Bebas Neue',sans-serif;color:var(--orange);letter-spacing:1px">120 лв</span>
+                </div>
+                <div class="fc-more">▼ Подробности</div>
+              </div>
+            </div>
+          </div>
+          <div class="ac-tour-detail">
+            <div style="padding-top:12px">
+              <div class="mc-section">
+                <div class="mc-sec-title">🗺️ МАРШРУТ</div>
+                <div class="mc-sec-body">Карлово → Васил Левски пътека → Амбарица → панорамна гледка → Шипка (85 км, горски черни пътища). Бавно темпо, чести спирки за снимки.</div>
+              </div>
+              <div class="mc-section">
+                <div class="mc-sec-title">✅ ВКЛЮЧЕНО В ЦЕНАТА</div>
+                <div class="mc-sec-body">• Водач с GPS навигация<br>• Обяд на Амбарица<br>• Техническа поддръжка<br>• Застраховка участник</div>
+              </div>
+              <div class="mc-section">
+                <div class="mc-sec-title">⚠️ ИЗИСКВАНИЯ</div>
+                <div class="mc-sec-body">• Дуал спорт или ендуро мотор<br>• Основна екипировка<br>• Без опит е ОК — бавно темпо<br>• Мотор под наем: от 60 лв/ден</div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
+                <button class="btn" onclick="showToast('✅ Записан за Стара Планина · 05.04!')">🏍️ Карай с нас</button>
+                <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text2)" onclick="showToast('📞 Обаждане на организатора...')">📞 Въпроси</button>
+              </div>
+              <div class="ac-tour-collapse" onclick="event.stopPropagation()">▲ Скрий</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tour 3: Extreme хард ендуро -->
+        <div class="ac-tour" onclick="this.classList.toggle('open')">
+          <div class="ac-tour-head">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div class="cal-date" style="background:rgba(220,50,50,.15);border-color:rgba(220,50,50,.3)">
+                <div class="cal-d" style="color:#e05040">12</div>
+                <div class="cal-m">АПР</div>
+              </div>
+              <div style="flex:1">
+                <div style="font:700 16px 'Exo 2',sans-serif;color:var(--text);margin-bottom:4px">🔥 Extreme Хард Ендуро с Величко</div>
+                <div class="meta">Троян → Амбарица → Централен Балкан</div>
+                <div style="margin:6px 0">
+                  <span class="dna dna-pro">🔴 Само можачи</span>
+                  <span class="dna dna-enduro">🌲 Хард Ендуро</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                  <span style="font-size:12px;color:var(--text2)">📅 1 ден</span>
+                  <span style="font-size:12px;color:var(--text2)">👥 4 места</span>
+                  <span style="font:700 18px 'Bebas Neue',sans-serif;color:#e05040;letter-spacing:1px">450 лв</span>
+                </div>
+                <div class="fc-more">▼ Подробности</div>
+              </div>
+            </div>
+          </div>
+          <div class="ac-tour-detail">
+            <div style="padding-top:12px">
+              <div class="mc-section">
+                <div class="mc-sec-title">🗺️ МАРШРУТ</div>
+                <div class="mc-sec-body">Троян → Бекемезки дол → Амбарица (скални секции, речни преходи, стръмни изкачвания). С Величко Манолов като водач. Само 4 места — максимално внимание.</div>
+              </div>
+              <div class="mc-section">
+                <div class="mc-sec-title">✅ ВКЛЮЧЕНО В ЦЕНАТА</div>
+                <div class="mc-sec-body">• Персонален водач — Величко Манолов<br>• Пълно техническо съпровождение<br>• GoPro заснемане + видео от деня<br>• Обяд + допълване на течности<br>• Диплом и класиране</div>
+              </div>
+              <div class="mc-section">
+                <div class="mc-sec-title">⚠️ ИЗИСКВАНИЯ</div>
+                <div class="mc-sec-body">• <strong style="color:#e05040">Минимум 3 години хард ендуро опит</strong><br>• Ендуро мотор в отлично техническо състояние<br>• Пълна екипировка + neck brace задължително<br>• Физическа подготовка — 6+ часа каране<br>• Подписване на декларация за риск</div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
+                <button class="btn" style="background:rgba(220,50,50,.15);border-color:#e05040;color:#e05040" onclick="showToast('🔥 Заявка изпратена! Величко ще се свърже за одобрение.')">🔥 Заявка за участие</button>
+                <button class="btn" style="background:transparent;border:1px solid var(--border);color:var(--text2)" onclick="showToast('📞 Обаждане на Величко...')">📞 Директно на Величко</button>
+              </div>
+              <div class="ac-tour-collapse" onclick="event.stopPropagation()">▲ Скрий</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== СЪБИТИЯ ========== -->
+  <div class="tab" id="t-events">
+    <div class="sec-title">🏁 СЪБИТИЯ & СЪСТЕЗАНИЯ <span style="font:400 12px 'Exo 2',sans-serif;color:var(--text2);letter-spacing:0">— Живото на общността</span></div>
+
+    <div class="f-cats">
+      <div class="fcat on">Всички<small>12 събития</small></div>
+      <div class="fcat">🏁 Състезания<small>5</small></div>
+      <div class="fcat">🏅 Тренировки<small>4</small></div>
+      <div class="fcat">🏍️ Карания<small>3</small></div>
+    </div>
+
+    <!-- ===== MEGA EVENT ===== -->
+    <div class="ev-wrap" style="background:linear-gradient(135deg,rgba(232,98,44,.08),rgba(196,154,108,.06));border:2px solid var(--orange);border-radius:14px;padding:0;margin-bottom:20px;overflow:hidden;position:relative">
+      <!-- Hero top -->
+      <div style="padding:24px 24px 16px;border-bottom:1px solid rgba(232,98,44,.2);position:relative">
+        <div style="position:absolute;top:0;right:0;background:var(--orange);color:#fff;font:700 11px 'JetBrains Mono',monospace;padding:6px 16px;border-radius:0 0 0 10px;letter-spacing:2px;animation:pulse 1.5s infinite">🔴 ТАЗИ СЪБОТА & НЕДЕЛЯ</div>
+        <div style="font:500 12px 'JetBrains Mono',monospace;color:var(--orange);letter-spacing:2px;margin-bottom:4px">15–16 МАРТ 2026</div>
+        <div style="font:700 36px 'Bebas Neue',sans-serif;letter-spacing:4px;color:var(--orange);line-height:1.1">🏁 EXTREME ENDURO FEST</div>
+        <div style="font:700 18px 'Bebas Neue',sans-serif;letter-spacing:3px;color:var(--earth);margin-top:2px">КАРЛОВО · РОЗОВАТА ДОЛИНА</div>
+        <div style="font-size:14px;margin-top:8px;line-height:1.7;max-width:700px">
+          Два дни чист адреналин в сърцето на Стара Планина. Състезание, скара, музика, мото общност. <strong>Не е просто състезание — това е преживяване.</strong>
+        </div>
+        <div class="fc-more" style="display:inline-block;margin-top:8px;font-size:12px;cursor:pointer" onclick="toggleEvent(this.closest('.ev-wrap'))">📋 Програма, цени, участници ↓</div>
+      </div>
+
+      <!-- Info grid (collapsible) -->
+      <div class="ev-detail">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:rgba(232,98,44,.1)">
+
+        <!-- ПРОГРАМА -->
+        <div style="padding:16px 20px;background:var(--bg)">
+          <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:2px;color:var(--orange);margin-bottom:8px">📋 ПРОГРАМА</div>
+          <div style="font-size:12px;line-height:1.8">
+            <div><strong style="color:var(--earth)">СЪБОТА 15.03</strong></div>
+            <div>08:00 — Регистрация & технически преглед</div>
+            <div>10:00 — 🏁 Старт Expert & Amateur</div>
+            <div>12:00 — Скара пауза 🍖</div>
+            <div>14:00 — 🏁 Hobby клас & Новобранци</div>
+            <div>17:00 — Награждаване Ден 1</div>
+            <div>18:00 — 🔥 Вечерна скара & DJ</div>
+            <div style="margin-top:6px"><strong style="color:var(--earth)">НЕДЕЛЯ 16.03</strong></div>
+            <div>09:00 — Свободно каране за всички</div>
+            <div>11:00 — 🏁 Финален кръг Expert</div>
+            <div>13:00 — Награждаване & Томбола</div>
+            <div>14:00 — Moto Expo зона отворена</div>
+          </div>
+        </div>
+
+        <!-- ЦЕНИ & ВХОД -->
+        <div style="padding:16px 20px;background:var(--bg)">
+          <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:2px;color:var(--orange);margin-bottom:8px">🎟️ ЦЕНИ & ВХОД</div>
+          <div style="font-size:12px;line-height:2">
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.3)"><span>🏁 Expert клас</span><span class="price-s">120 лв <span class="dual">/ 61 €</span></span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.3)"><span>🏁 Amateur клас</span><span class="price-s">80 лв <span class="dual">/ 41 €</span></span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.3)"><span>🏁 Hobby клас</span><span class="price-s">50 лв <span class="dual">/ 26 €</span></span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.3)"><span>👁 Зрител (2 дни)</span><span class="price-s">15 лв <span class="dual">/ 8 €</span></span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.3)"><span>👶 Деца до 12г</span><span style="color:var(--green);font-weight:600">БЕЗПЛАТНО</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0"><span>🏕️ Къмпинг зона</span><span style="color:var(--green);font-weight:600">БЕЗПЛАТНО</span></div>
+          </div>
+        </div>
+
+        <!-- КАКВО ИМА -->
+        <div style="padding:16px 20px;background:var(--bg)">
+          <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:2px;color:var(--orange);margin-bottom:8px">🎉 НА МЯСТО</div>
+          <div style="font-size:12px;line-height:2">
+            <div>🍖 Скара & бира зона (и двата дни)</div>
+            <div>🎵 DJ & музика вечерта</div>
+            <div>🔧 Сервиз зона — <span class="link" onclick="openProfile('pesho')">Пешо Механика</span> на място</div>
+            <div>🏪 Moto Expo — <span class="link" onclick="openProfile('motohaus')">МотоХаус</span>, <span class="link" onclick="openProfile('edimoto_shop')">EdiMoto</span>, <span class="link" onclick="openProfile('elilison')">Ели Лисън</span></div>
+            <div>🧤 Екипировка тест зона</div>
+            <div>📸 Фото & видео екип</div>
+            <div>🚑 Медицински екип на място</div>
+            <div>🏕️ Безплатен къмпинг с душове</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WHO'S COMING -->
+      <div style="padding:16px 20px;border-top:1px solid rgba(232,98,44,.2)">
+        <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:2px;color:var(--orange);margin-bottom:10px">⭐ КОЙ ЩЕ БЪДЕ ТАМ</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(232,98,44,.06);border:1px solid rgba(232,98,44,.12);border-radius:8px;cursor:pointer;font-size:12px" onclick="openProfile('kabakchiev')">
+            <span style="font-size:18px">🏆</span><div><strong>Кабакчиев</strong><div class="meta">Световен Шампион · Ще кара</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(196,154,108,.06);border:1px solid rgba(196,154,108,.12);border-radius:8px;cursor:pointer;font-size:12px" onclick="openProfile('manolov')">
+            <span style="font-size:18px">🏅</span><div><strong>Величко Манолов</strong><div class="meta">Легенда · Стартер & награждаване</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(90,138,60,.06);border:1px solid rgba(90,138,60,.12);border-radius:8px;cursor:pointer;font-size:12px" onclick="openProfile('pesho')">
+            <span style="font-size:18px">🔧</span><div><strong>Пешо Механика</strong><div class="meta">Сервиз на място</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(232,98,44,.06);border:1px solid rgba(232,98,44,.12);border-radius:8px;cursor:pointer;font-size:12px" onclick="openProfile('motohaus')">
+            <span style="font-size:18px">🏪</span><div><strong>МотоХаус</strong><div class="meta">Moto Expo · Нови мотори</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(180,130,220,.06);border:1px solid rgba(180,130,220,.12);border-radius:8px;cursor:pointer;font-size:12px" onclick="openProfile('elilison')">
+            <span style="font-size:18px">🧤</span><div><strong>Ели Лисън Мото</strong><div class="meta">Екипировка на място</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;font-size:12px">
+            <span style="font-size:18px">🏍️</span><div><strong style="color:var(--orange)">+67 ездачи</strong><div class="meta">записани от 14 града</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOCATION -->
+      <div style="padding:16px 20px;border-top:1px solid rgba(232,98,44,.2);display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:2px;color:var(--orange);margin-bottom:4px">📍 МЕСТОПОЛОЖЕНИЕ</div>
+          <div style="font-size:13px">Карлово, Розовата долина · Мото парк "Стара Планина"</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">2ч от София · 1ч от Пловдив · Паркинг за 200+ коли и ремаркета</div>
+        </div>
+        <button class="btn btn-s" onclick="go('map')" style="margin-left:auto">🗺️ Маршрут до Карлово</button>
+      </div>
+
+      <!-- СПОНСОРИ -->
+      <div style="padding:12px 20px;border-top:1px solid rgba(232,98,44,.2);background:rgba(255,255,255,.02)">
+        <div style="font:500 9px 'JetBrains Mono',monospace;letter-spacing:2px;color:var(--text2);margin-bottom:6px">СПОНСОРИ & ПАРТНЬОРИ</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text2)">
+          <span class="link" onclick="openProfile('motohaus')">МотоХаус</span> ·
+          <span class="link" onclick="openProfile('edimoto_shop')">EdiMoto</span> ·
+          <span class="link" onclick="openProfile('elilison')">Ели Лисън Мото</span> ·
+          <span>Интеркарс</span> ·
+          <span>Michelin</span> ·
+          <span>Alpinestars</span> ·
+          <span>Red Bull</span>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div style="padding:16px 20px;border-top:2px solid var(--orange);background:rgba(232,98,44,.04);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-o" style="font-size:13px;padding:10px 22px" onclick="joinEvent('extreme-fest-2026',this)">🏁 Записвам се за състезание</button>
+        <button class="btn btn-o" style="font-size:13px;padding:10px 22px;background:var(--earth)">🎟️ Купи зрителски билет</button>
+        <button class="btn btn-s" style="font-size:12px">📎 Сподели с приятел</button>
+        <span style="margin-left:auto;font:500 11px 'JetBrains Mono',monospace;color:var(--text2)">Остават <strong style="color:var(--orange)">12 дни</strong></span>
+      </div>
+      <div class="ev-collapse" onclick="event.stopPropagation();toggleEvent(this.closest('.ev-wrap'))">▲ скрий</div>
+      </div><!-- /ev-detail -->
+    </div>
+
+    <!-- ===== END MEGA EVENT ===== -->
+    <div class="ev-wrap card" onclick="toggleEvent(this)" style="cursor:pointer;margin-bottom:14px;border-left:3px solid var(--orange);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;right:0;background:var(--orange);color:#fff;font:600 10px 'JetBrains Mono',monospace;padding:4px 12px;border-radius:0 0 0 8px;letter-spacing:1px;animation:pulse 2s infinite">🔴 СКОРО</div>
+      <div class="cal-date" style="font-size:12px">15 МАРТ 2026 · СЪБОТА</div>
+      <div style="font:700 22px 'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--orange);margin:4px 0">🏁 BG-X ЕНДУРО — КРЪГ 3</div>
+      <div class="meta">📍 Карлово · Старт 10:00 · <span style="color:var(--text2)">23 записани</span></div>
+      <div class="fc-more" style="display:inline-block;margin-top:6px;font-size:12px">подробности ↓</div>
+      <div class="ev-detail">
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;font-size:12px">
+          <span style="padding:4px 10px;background:rgba(232,98,44,.08);border-radius:4px;border:1px solid rgba(232,98,44,.15)">🏆 Expert</span>
+          <span style="padding:4px 10px;background:rgba(196,154,108,.08);border-radius:4px;border:1px solid rgba(196,154,108,.15)">🟠 Amateur</span>
+          <span style="padding:4px 10px;background:rgba(90,138,60,.08);border-radius:4px;border:1px solid rgba(90,138,60,.15)">🟢 Hobby</span>
+        </div>
+        <div style="margin-top:10px;font-size:13px;line-height:1.6">
+          Трети кръг от националната BG-X ендуро серия. 3 пръстена с различна трудност. Технически терен — камъни, корени, кал. Такса участие: <span class="price-s">80 лв <span class="dual">/ 41 €</span></span>. Зрители безплатно.
+        </div>
+        <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,.03);border-radius:6px">
+          <div class="meta" style="margin-bottom:6px">КОЙ ОТИВА:</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px">
+            <span class="link" onclick="event.stopPropagation();openProfile('kabakchiev')">🏆 Кабакчиев</span>
+            <span class="link" onclick="event.stopPropagation();openProfile('manolov')">🏅 Манолов</span>
+            <span class="link" onclick="event.stopPropagation();openProfile('pesho')">🔧 Пешо</span>
+            <span class="link" onclick="event.stopPropagation();openProfile('marin')">🏍️ Марин</span>
+            <span style="color:var(--text2)">+19 ездачи</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-o" onclick="event.stopPropagation();joinEvent('bgx-krug3',this)">Записвам се</button>
+          <button class="btn btn-s" onclick="event.stopPropagation()">Виж пълна програма</button>
+          <button class="btn btn-s" onclick="event.stopPropagation();go('events')">Маршрут до Карлово</button>
+        </div>
+        <div class="ev-collapse" onclick="event.stopPropagation();toggleEvent(this.closest('.ev-wrap'))">▲ скрий</div>
+      </div>
+    </div>
+
+    <!-- Event 2: Тренировка Манолов -->
+    <div class="ev-wrap card" onclick="toggleEvent(this)" style="cursor:pointer;margin-bottom:14px;border-left:3px solid var(--green)">
+      <div class="cal-date">22 МАРТ 2026 · НЕДЕЛЯ</div>
+      <div style="font:700 18px 'Bebas Neue',sans-serif;letter-spacing:2px;margin:4px 0">🏅 ТРЕНИРОВКА ПРИ МАНОЛОВ</div>
+      <div class="meta">📍 Манолово · Писта Величко · 10:00 · <span style="color:var(--text2)">8 записани</span></div>
+      <div class="fc-more" style="display:inline-block;margin-top:6px;font-size:12px">подробности ↓</div>
+      <div class="ev-detail">
+        <div style="margin-top:8px;font-size:13px;line-height:1.6">
+          Неделна тренировка за всички нива. Новобранци добре дошли — <span class="link" onclick="event.stopPropagation();openProfile('manolov')">Треньор Манолов</span> лично води групата. Носете гуми за кал. <strong style="color:var(--green)">Безплатно.</strong>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn btn-g" onclick="event.stopPropagation()">Карай с нас</button>
+          <button class="btn btn-s" onclick="event.stopPropagation();openProfile('manolov')">За треньора</button>
+        </div>
+        <div class="ev-collapse" onclick="event.stopPropagation();toggleEvent(this.closest('.ev-wrap'))">▲ скрий</div>
+      </div>
+    </div>
+
+    <!-- Event 3: Six Days Crazy Job -->
+    <div class="ev-wrap card" onclick="toggleEvent(this)" style="cursor:pointer;margin-bottom:14px;border-left:3px solid var(--earth)">
+      <div class="cal-date">АПРИЛ 2026</div>
+      <div style="font:700 18px 'Bebas Neue',sans-serif;letter-spacing:2px;margin:4px 0">🔥 SIX DAYS CRAZY JOB</div>
+      <div class="meta">📍 Казанлък · Международно · <span style="color:var(--text2)">47 записани</span></div>
+      <div class="fc-more" style="display:inline-block;margin-top:6px;font-size:12px">подробности ↓</div>
+      <div class="ev-detail">
+        <div style="margin-top:8px;font-size:13px;line-height:1.6">
+          Международно ендуро събитие. 6 дни, 6 различни трасета в Розовата долина. Категории от Hobby до Pro. Чуждестранни участници от 12 държави.
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:6px;font-size:12px">
+          <span class="link" onclick="event.stopPropagation();openProfile('kabakchiev')">🏆 Кабакчиев</span>
+          <span class="link" onclick="event.stopPropagation();openProfile('manolov')">👑 Манолов</span>
+          <span style="color:var(--text2)">+45 ездачи</span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn btn-o" onclick="event.stopPropagation();joinEvent('six-days-2026',this)">Записвам се</button>
+          <button class="btn btn-s" onclick="event.stopPropagation()">Повече информация</button>
+        </div>
+        <div class="ev-collapse" onclick="event.stopPropagation();toggleEvent(this.closest('.ev-wrap'))">▲ скрий</div>
+      </div>
+    </div>
+
+    <!-- Event 4: Рила каране -->
+    <div class="ev-wrap card" onclick="toggleEvent(this)" style="cursor:pointer;margin-bottom:14px;border-left:3px solid var(--green)">
+      <div class="cal-date">29 МАРТ 2026 · СЪБОТА</div>
+      <div style="font:700 18px 'Bebas Neue',sans-serif;letter-spacing:2px;margin:4px 0">🏔️ РИЛА ЕНДУРО SUNDAY</div>
+      <div class="meta">📍 Самоков → Мальовица · 47 км · <span style="color:var(--text2)">6 записани</span></div>
+      <div class="fc-more" style="display:inline-block;margin-top:6px;font-size:12px">подробности ↓</div>
+      <div class="ev-detail">
+        <div style="margin-top:8px;font-size:13px;line-height:1.6">
+          Неделно каране по класическия рила маршрут. Горски пътища, камъни, кал. Тръгване 9:00 от Самоков. Всички нива, но нужен е опит в кал.
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn btn-g" onclick="event.stopPropagation()">Карай с нас</button>
+          <button class="btn btn-s" onclick="event.stopPropagation();go('events')">Виж маршрута</button>
+        </div>
+        <div class="ev-collapse" onclick="event.stopPropagation();toggleEvent(this.closest('.ev-wrap'))">▲ скрий</div>
+      </div>
+    </div>
+
+    <!-- Event 5: BG-X Кръг 4 -->
+    <div class="card" style="margin-bottom:14px;border-left:3px solid var(--orange);opacity:.7">
+      <div>
+        <div class="cal-date">МАЙ 2026 · ПРЕДСТОИ</div>
+        <div style="font:700 18px 'Bebas Neue',sans-serif;letter-spacing:2px;margin:4px 0">🏁 BG-X ЕНДУРО — КРЪГ 4</div>
+        <div class="meta">📍 Локация TBA · Детайли скоро</div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text2)">Четвърти кръг от серията. Датата и локацията ще бъдат обявени. Следи тук.</div>
+    </div>
+
+    <!-- КАРТА (вградена в Събития) -->
+    <div style="margin-top:20px">
+      <div class="sec-title">🗺️ КАРТА НА ОБЩНОСТТА</div>
+      <div class="map-l">
+        <div class="ml on" data-mt="biz">🏪 Бизнеси</div>
+        <div class="ml" data-mt="route">🗺️ Маршрути</div>
+      </div>
+      <div id="komunaMap" style="height:420px;border-radius:10px;border:2px solid var(--border);overflow:hidden"></div>
+    </div>
+  </div>
+
+  <!-- Карта е вградена в Събития -->
+
+  <!-- FOOTER -->
+  <!-- BOTTOM MOBILE NAV -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bnav-btn" data-t="home" onclick="go('home')"><span class="bnav-icon">🏠</span><span class="bnav-label">Начало</span></button>
+    <button class="bnav-btn" data-t="forum" onclick="go('forum')"><span class="bnav-icon">💬</span><span class="bnav-label">Форум</span></button>
+    <button class="bnav-btn" data-t="maze" onclick="go('maze')"><span class="bnav-icon">🔩</span><span class="bnav-label">Мазе</span></button>
+    <button class="bnav-btn" data-t="events" onclick="go('events')"><span class="bnav-icon">🏁</span><span class="bnav-label">Събития</span></button>
+    <button class="bnav-btn" data-t="dir" onclick="go('dir')"><span class="bnav-icon">📋</span><span class="bnav-label">Каталог</span></button>
+  </nav>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo">ОФРОУД РЕПУБЛИКА</div>
+        <div class="footer-est">est. 2024 · Общността на българските ездачи</div>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <div class="footer-col-title">Общност</div>
+          <a onclick="go('forum')">Форум</a>
+          <a onclick="go('maze')">Мазето</a>
+          <a onclick="go('events')">Събития</a>
+          <a onclick="go('dir')">Директория</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Ресурси</div>
+          <a onclick="go('academy')">Академия</a>
+          <a onclick="go('home')">ДНК Каталог</a>
+          <a onclick="go('forum');setTimeout(function(){enterZone('newbie')},150)">Наръчник</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Социални</div>
+          <a href="https://facebook.com" target="_blank" rel="noopener">Facebook</a>
+          <a href="https://instagram.com" target="_blank" rel="noopener">Instagram</a>
+          <a href="https://youtube.com" target="_blank" rel="noopener">YouTube</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; 2024–2026 Офроуд Република. Всички права запазени.</span>
+        <span class="footer-tagline">Калта е по-добра от асфалта.</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="floor"></div>
+<button class="wk" onclick="toggleChat()" title="Попитай механика" id="wkBtn">🔧</button>
+<div class="wk-l">Попитай механика</div>
+
+<!-- AI CHAT PANEL -->
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-head">
+    <span style="font-size:20px">🔧</span>
+    <div><div class="chat-head-title">Попитай механика</div><div class="chat-head-sub">AI механик · знае всичко за ендурото</div></div>
+    <div class="chat-close" onclick="toggleChat()">✕</div>
+  </div>
+  <div class="chat-msgs" id="chatMsgs">
+    <div class="chat-msg bot">Здравей! Аз съм AI механикът на Офроуд Република. Питай ме каквото искаш за мотори, части, настройки, или ремонти. Мога да те насоча и към правилния майстор. 🔧</div>
+  </div>
+  <div class="chat-input">
+    <input type="text" id="chatIn" placeholder="Напиши въпрос..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()" id="chatSendBtn">➤</button>
+  </div>
+  <div class="input-community-msg" style="padding:0 10px 6px">💭 Пиши честно. Помагай искрено. Общността ти вярва.</div>
+</div>
+
+<!-- GARAGE PANEL -->
+<div class="garage-panel" id="garagePanel">
+  <div class="garage-panel-head">
+    <span>🏍️ МОЯТ ГАРАЖ <span id="garageTierBadge"></span></span>
+    <span style="cursor:pointer;color:var(--text2);font-size:16px" onclick="toggleGarage()">✕</span>
+  </div>
+  <div class="garage-bikes" id="garageBikes"></div>
+  <div class="garage-add">
+    <select id="garageMake">
+      <option value="" disabled selected>Марка...</option>
+      <option>Yamaha</option><option>KTM</option><option>Honda</option>
+      <option>Husqvarna</option><option>Gas Gas</option><option>Fantic</option>
+      <option>Suzuki</option><option>Kawasaki</option><option>Beta</option>
+      <option>Sherco</option><option>TM</option>
+    </select>
+    <input id="garageModel" placeholder="Модел (YZ250F, EXC 300...)" />
+    <input id="garageYear" placeholder="Година" type="number" min="1990" max="2026" />
+    <div class="garage-status-toggle">
+      <span class="garage-st-opt on" data-st="current" onclick="setGarageStatus('current')">Карам сега</span>
+      <span class="garage-st-opt" data-st="past" onclick="setGarageStatus('past')">Карал съм</span>
+    </div>
+    <textarea id="garageNote" class="garage-note-input" placeholder="Разкажи нещо за мотора..." maxlength="200"></textarea>
+    <input id="garageMonths" placeholder="Месеци с мотора (по избор)" type="number" min="0" max="600" />
+    <button class="btn btn-o" onclick="addBike()">+ Добави</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/app.js"></script>
+<script src="js/map.js"></script>
+</body>
+</html>
