@@ -2045,7 +2045,7 @@ function getUsers(){try{return JSON.parse(localStorage.getItem('orUsers'))||{}}c
 function saveUsers(u){localStorage.setItem('orUsers',JSON.stringify(u))}
 function getCurrentUserId(){return localStorage.getItem('orSession')||null}
 function getCurrentUser(){var id=getCurrentUserId();if(!id)return null;var u=getUsers();return u[id]||null}
-function loginAs(userId){localStorage.setItem('orSession',userId);refreshAuthUI();showGreeting();refreshTierDisplay();renderGarage();updateGarageBadge();updateInboxBadge();updateStreak();refreshHome()}
+function loginAs(userId){localStorage.setItem('orSession',userId);refreshAuthUI();showGreeting();refreshTierDisplay();renderGarage();updateGarageBadge();seedMessages();seedNotifications();updateInboxBadge();updateStreak();refreshHome()}
 function logout(){localStorage.removeItem('orSession');refreshAuthUI();showGreeting();refreshTierDisplay();renderGarage();updateGarageBadge();refreshHome();showToast('👋 До скоро!')}
 
 function seedDemoAccounts(){
@@ -2067,11 +2067,7 @@ function seedDemoAccounts(){
     {bikeIdx:0,date:'2026-02',type:'other',label:'Контратежест',hours:120,who:'motohaus',whoName:'МотоХаус',cost:180,note:'Сменен на нов OEM',confirmed:true,next:''},
     {bikeIdx:0,date:'2026-01',type:'suspension',label:'Окачване ревизия',hours:110,who:'pesho',whoName:'Пешо Механика',cost:350,note:'Смяна масло + семеринги WP XPLOR',confirmed:true,next:'на 160ч'}
   ]));
-  // Seed forum posts
-  if(!localStorage.getItem('orForumPosts'))localStorage.setItem('orForumPosts',JSON.stringify([
-    {id:'demo_1',zone:'problem',type:'q',title:'Масло тече от предна вилка — WP XPLOR',body:'Забелязах масло на долните крачета след последното каране. Мотор: KTM EXC 300 2019. Някой имал ли е подобен проблем?',author:'marin',date:'2026-03-04',reactions:{'👍':3,'🔧':1},replies:2},
-    {id:'demo_2',zone:'newbie',type:'q',title:'Първа тренировка — какво да нося?',body:'Записах се при Манолов за 22 март. Какво оборудване ми трябва за начинаещ?',author:'ivo',date:'2026-03-05',reactions:{'👍':5},replies:4}
-  ]));
+  // Forum posts now seeded by seedForumDemo()
   // Seed event registrations
   if(!localStorage.getItem('orEventRegs'))localStorage.setItem('orEventRegs',JSON.stringify({'extreme-fest-2026':['marin','ivo','pesho','motohaus'],'training-22mar-kids':['ivo']}));
 }
@@ -3141,7 +3137,7 @@ function showNewTopicForm(zone){
   });
   tagPills+='</div>';
 
-  var toolbar='<div class="ntf-toolbar"><button class="ntf-tool-btn" onclick="ntfInsert(\'bold\')" title="Bold (Ctrl+B)"><b>B</b></button><button class="ntf-tool-btn" onclick="ntfInsert(\'italic\')" title="Italic (Ctrl+I)"><i>I</i></button><button class="ntf-tool-btn" onclick="ntfInsert(\'link\')" title="Линк">🔗</button><button class="ntf-tool-btn" onclick="ntfInsert(\'code\')" title="Код">&lt;/&gt;</button></div>';
+  var toolbar='<div class="ntf-toolbar"><button class="ntf-tool-btn" onclick="ntfInsert(\'bold\')" title="Bold (Ctrl+B)"><b>B</b></button><button class="ntf-tool-btn" onclick="ntfInsert(\'italic\')" title="Italic (Ctrl+I)"><i>I</i></button><button class="ntf-tool-btn" onclick="ntfInsert(\'link\')" title="Линк">🔗</button><button class="ntf-tool-btn" onclick="ntfInsert(\'image\')" title="Снимка (URL)">📷</button><button class="ntf-tool-btn" onclick="ntfInsert(\'code\')" title="Код">&lt;/&gt;</button></div>';
 
   area.innerHTML='<div class="new-topic-form">'+
     '<div class="ntf-header"><span>✏️ НОВА ТЕМА В '+escHtml(zn).toUpperCase()+'</span><span style="font:400 11px \'Exo 2\';color:var(--text2);letter-spacing:0">зона: '+escHtml(zn)+'</span></div>'+
@@ -3209,11 +3205,12 @@ function ntfInsert(type){
   if(type==='bold')insert='**'+(sel||'текст')+'**';
   else if(type==='italic')insert='*'+(sel||'текст')+'*';
   else if(type==='link')insert='['+(sel||'текст')+'](https://)';
+  else if(type==='image')insert='![снимка](https://)';
   else if(type==='code')insert=sel.indexOf('\n')>-1?'```\n'+sel+'\n```':'`'+(sel||'код')+'`';
   ta.value=ta.value.substring(0,start)+insert+ta.value.substring(end);
   ta.focus();
   var cursorPos=start+insert.length;
-  if(type==='link')cursorPos=start+insert.indexOf('https://')+8;
+  if(type==='link'||type==='image')cursorPos=start+insert.indexOf('https://')+8;
   ta.setSelectionRange(cursorPos,cursorPos);
 }
 
@@ -3228,6 +3225,8 @@ function renderMarkdown(text){
   h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   // Italic
   h=h.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // Images (before links so ![alt](url) doesn't match as link)
+  h=h.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,'<img src="$2" alt="$1" class="md-img" loading="lazy" onclick="event.stopPropagation();window.open(\'$2\',\'_blank\')">');
   // Links
   h=h.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
   // @mentions — validate against real users
@@ -3282,6 +3281,7 @@ function submitNewTopic(zone){
   document.getElementById('newTopicFormArea').innerHTML='';
   _ntSelectedType='q';_ntSelectedTags=[];_ntShowPreview=false;
   renderUserThread(post,true);
+  refreshHome();
   if(isFirstPost){
     showCelebration('🎉','ПЪРВАТА ТИ ТЕМА!','Добре дошъл в разговора, ездач!');
   }else{
@@ -3344,6 +3344,7 @@ function toggleUserThread(postId){
     for(var i=0;i<posts.length;i++){if(posts[i].id===postId){post=posts[i];break}}
     if(!post)return;
     detail.innerHTML=renderThreadDetail(post);detail.classList.add('on');
+    setTimeout(function(){el.scrollIntoView({behavior:'smooth',block:'start'})},100);
   }
 }
 function renderThreadDetail(post){
@@ -3466,13 +3467,22 @@ function submitReply(postId){
   if(!Array.isArray(post.replies))post.replies=[];
   post.replies.push({id:'r_'+Date.now(),author:user.id,body:body,date:new Date().toISOString().split('T')[0],likes:[]});
   saveForumPosts(posts);
+  // Notifications
+  var now=new Date();var nDate=now.toISOString().split('T')[0];var nTime=now.toLocaleTimeString('bg-BG',{hour:'2-digit',minute:'2-digit'});
+  addNotification(post.author,{id:'notif_'+Date.now(),type:'reply',from:user.id,postId:post.id,postTitle:(post.title||'').substring(0,40),preview:body.substring(0,60),date:nDate,time:nTime,read:false});
+  var mentions=extractMentions(body);
+  for(var mi=0;mi<mentions.length;mi++){
+    if(mentions[mi]!==user.id&&mentions[mi]!==post.author){
+      addNotification(mentions[mi],{id:'notif_'+(Date.now()+mi+1),type:'mention',from:user.id,postId:post.id,postTitle:(post.title||'').substring(0,40),preview:body.substring(0,60),date:nDate,time:nTime,read:false});
+    }
+  }
   var detail=document.getElementById('td_'+postId);if(detail)detail.innerHTML=renderThreadDetail(post);
   // Pulse animation on newest reply
   if(detail){var lastReply=detail.querySelector('.th-post:last-of-type');if(lastReply){lastReply.classList.remove('reply-new');lastReply.offsetHeight;lastReply.classList.add('reply-new')}}
   var ft=document.querySelector('[data-post-id="'+postId+'"]');
   if(ft){var cn=ft.querySelector('.ft-n');if(cn)cn.textContent=post.replies.length}
   showToast('✅ Отговорът е публикуван!','success');
-  renderFeed();
+  refreshHome();
 }
 
 // ===== TIER FOR ANY USER =====
@@ -3528,7 +3538,11 @@ function toggleReaction(postId,type){
   var arr=post.reactions[type];if(!arr)return;
   var idx=arr.indexOf(uid);
   var wasReacted=idx>-1;
-  if(idx>-1)arr.splice(idx,1);else arr.push(uid);
+  if(idx>-1){arr.splice(idx,1)}else{
+    arr.push(uid);
+    var now=new Date();
+    addNotification(post.author,{id:'notif_'+Date.now(),type:'reaction',from:uid,postId:post.id,postTitle:(post.title||'').substring(0,40),preview:type,date:now.toISOString().split('T')[0],time:now.toLocaleTimeString('bg-BG',{hour:'2-digit',minute:'2-digit'}),read:false});
+  }
   if(type==='like')post.likes=post.reactions.like.slice();
   // Optimistic UI: update button instantly
   var ft=document.querySelector('[data-post-id="'+postId+'"]');
@@ -3820,6 +3834,7 @@ function seedForumDemo(){
   if(changed)saveForumPosts(posts);
   if(posts.length>0)return;
   var seeds=[
+    // --- Original seed posts ---
     {id:'post_seed1',zone:'problem',type:'q',title:'EXC 300 TPI губи мощност на горещо — идеи?',body:'След 30 минути каране мотора започва да дърпа слабо. На студено е ок. Инжекторите чистени, свещта нова. Какво да проверя?\n\nОпитах:\n- Нова свещ NGK\n- Чистене на инжектори\n- Проверка на въздушен филтър',tags:['ktm','двигател','електрика'],author:'marin',date:'2026-03-04',reactions:{like:['pesho','ivo','gosho'],wrench:['ivo'],thanks:[]},likes:['pesho','ivo','gosho'],replies:[
       {id:'r_s1_1',author:'pesho',body:'Може да е **fuel pump relay** — при горещо губят контакт. Провери с мултицет съпротивлението при работна температура.',date:'2026-03-04',likes:['marin','ivo']},
       {id:'r_s1_2',author:'ivo',body:'При мен беше **map сензора**. GET ECU-то го показа веднага с диагностика. Мина ми през Гошо Електро.',date:'2026-03-05',likes:['marin']},
@@ -3832,6 +3847,56 @@ function seedForumDemo(){
     {id:'post_seed3',zone:'newbie',type:'q',title:'Първи ендуро мотор — бюджет 5000лв, какво да гледам?',body:'Нов съм в офроуда. Карам на асфалт от 3 години. Искам нещо за гората, бюджет около 5000лв.\n\nКакво да препоръчате? Гледам:\n- KTM EXC 250\n- Yamaha WR250F\n- Honda CRF250X',tags:['екипировка'],author:'ivo',date:'2026-03-01',reactions:{like:['marin','pesho'],wrench:[],thanks:['marin']},likes:['marin','pesho'],replies:[
       {id:'r_s3_1',author:'marin',body:'За 5000лв гледай **KTM EXC 250/300** 2015-2017 или **Yamaha WR250F**. И двете са супер за начало. Внимавай за моточасовете.',date:'2026-03-01',likes:['ivo']},
       {id:'r_s3_2',author:'pesho',body:'Каквото и да вземеш, задели 500-800лв за първи сервиз. Винаги има какво да се оправи на втора ръка мотор.',date:'2026-03-02',likes:['ivo','marin']}
+    ]},
+    // --- Converted from HTML hardcoded threads ---
+    {id:'post_yz250f',zone:'problem',type:'s',title:'Вибрация на 6000 оборота — какво да проверя?',body:'Появи се вибрация на 6000 об., на студено, след 10 мин изчезва. Мислех за окачване, но не съм сигурен. YZ250F 2019, 120 моточаса. Някой имал ли е подобно?',tags:['yamaha','двигател','окачване'],author:'marin',date:'2026-03-06',reactions:{like:['pesho','ivo','gosho','kabakchiev','motohaus','manolov'],wrench:['pesho','kabakchiev','ivo','gosho'],thanks:['pesho','kabakchiev','motohaus','manolov','ivo','gosho','elilison']},likes:[],solutionReplyId:'r_yz_1',replies:[
+      {id:'r_yz_1',author:'pesho',body:'Ако вибрацията е при конкретни обороти и идва от долу — почти сигурно е **контратежест коляновия вал**. Не е окачване. Вдигни задницата и газирай — ако усещаш в степенките → долна част на двигателя. Промери контратежеста.',date:'2026-03-06',likes:['marin','kabakchiev','ivo','gosho','manolov']},
+      {id:'r_yz_2',author:'kabakchiev',body:'Пешо е прав. Същото имах на моя 2018 YZ. **Контратежест + крайно уплътнение.** Не губи време с окачване — отвори долу.',date:'2026-03-07',likes:['marin','pesho','ivo']},
+      {id:'r_yz_3',author:'motohaus',body:'Имаме контратежест за YZ250F 2019-2023 на склад. **140 лв**. Пратка утре или на място в Нови хан.',date:'2026-03-07',likes:['marin']},
+      {id:'r_yz_4',author:'marin',body:'**РЕШЕНО!** Точно контратежест — 0.3mm разлика. Нов от МотоХаус, Пешо го смени за 4 часа. Мерси на всички!\n\nЦена: част **140 лв** + труд **120 лв** = **260 лв**',date:'2026-03-08',likes:['pesho','kabakchiev','motohaus','ivo']}
+    ]},
+    {id:'post_tpi',zone:'tech',type:'q',title:'TPI vs карбуратор — кое за какво?',body:'Горе TPI е по-чист, но долу при ниски обороти карбураторът дава повече контрол. Кой какъв опит има? Особено за hard enduro условия — кал, стръмни изкачвания, бавно каране.',tags:['ktm','двигател'],author:'kabakchiev',date:'2026-03-07',reactions:{like:['marin','pesho','ivo','gosho','manolov'],wrench:['marin','ivo','gosho','pesho'],thanks:['marin','ivo','gosho','manolov','pesho']},likes:[],replies:[
+      {id:'r_tpi_1',author:'marin',body:'С моя EXC 300 TPI съм доволен за трейлове. Но на бавно каране в кал понякога усещам лек **lag** при газиране. Карбураторът реагира по-директно.',date:'2026-03-07',likes:['kabakchiev','ivo']},
+      {id:'r_tpi_2',author:'gosho',body:'С правилен **ECU ремап** TPI-то може да стане доста по-отзивчиво долу. GET GPA е добър вариант. Ако някой иска — правя диагностика и настройка.',date:'2026-03-08',likes:['marin','kabakchiev','pesho']}
+    ]},
+    {id:'post_xef310',zone:'problem',type:'h',title:'XEF 310 Евро 5 — проблеми и решения',body:'Каталитичен конвертор, ECU ремап, какво работи реално. Споделям моя опит с Fantic XEF 310 и проблемите на Euro 5 версията.\n\nОсновни проблеми:\n- Загряване при бавно каране\n- ECU ограничава мощността\n- Катализаторът се задръства в кал',tags:['fantic','електрика'],author:'gosho',date:'2026-03-08',reactions:{like:['ivo','marin','pesho'],wrench:['ivo','marin','pesho'],thanks:['ivo','marin']},likes:[],replies:[
+      {id:'r_xef_1',author:'ivo',body:'Имам същия мотор! Катализаторът е кошмар в калта. Свалих го и сложих **straight pipe** — разликата е огромна. Но за ТГП може да е проблем...',date:'2026-03-08',likes:['gosho','marin']}
+    ]},
+    {id:'post_gumi',zone:'tech',type:'e',title:'Ендуро гуми за БГ условия 2026',body:'Michelin Enduro Medium, Mitas, Maxxis — впечатления за кал, камъни, пясък. Тествах и трите марки през последните 2 сезона.\n\n**Michelin Enduro Medium** — универсална, най-добра за смесен терен\n**Mitas EF-07** — отлична за кал, по-мека гума\n**Maxxis Enduro** — евтина, но се износва бързо',tags:['гуми','ендуро'],author:'manolov',date:'2026-03-05',reactions:{like:['marin','pesho','ivo','gosho','kabakchiev','motohaus','edimoto'],wrench:['marin','pesho','ivo'],thanks:['marin','pesho','ivo','gosho','kabakchiev','motohaus','edimoto','elilison']},likes:[],replies:[
+      {id:'r_gumi_1',author:'marin',body:'Michelin Enduro Medium карам от 6 месеца. За **Странджа и Родопи** е перфектна — камъни + кал + корени. Издържа ми 80 моточаса.',date:'2026-03-05',likes:['manolov','pesho','ivo']},
+      {id:'r_gumi_2',author:'pesho',body:'За клиентите ми: ако карате предимно **кал и гора** — Mitas. За **смесен терен** — Michelin. Maxxis само за бюджет.',date:'2026-03-06',likes:['manolov','marin','ivo','kabakchiev']}
+    ]},
+    {id:'post_okachvane',zone:'tech',type:'q',title:'Showa vs WP XPLOR — за 90+ кг ездачи',body:'Бюджет до 800 лв за ревизия + пружини. Кой е по-добрият вариант? Карам предимно ендуро трейлове, тежа 95 кг с екипировка.\n\nЧувал съм че WP XPLOR е по-лесна за настройка, но Showa е по-стабилна на скорост.',tags:['окачване','wp'],author:'pesho',date:'2026-03-06',reactions:{like:['marin','ivo','kabakchiev'],wrench:['marin','ivo'],thanks:['marin']},likes:[],replies:[
+      {id:'r_ok_1',author:'kabakchiev',body:'За 90+ кг **WP XPLOR с пружини 5.0-5.2** е по-добрият вариант. По-лесна за сервиз, по-предсказуема. Showa SFF-Air е добра, но по-сложна за настройка.',date:'2026-03-06',likes:['pesho','marin','ivo']},
+      {id:'r_ok_2',author:'marin',body:'Аз съм 95кг и карам WP XPLOR с пружини 5.0. След ребилда при @pesho — перфектно. Препоръчвам!',date:'2026-03-07',likes:['pesho','kabakchiev']}
+    ]},
+    {id:'post_rodopi',zone:'story',type:'e',title:'Родопски рунд — 3 дни, 400км черни пътища',body:'Маршрут **Смолян → Триград → Доспат** с GPS tracks и снимки. Три дни офроуд из Родопите — едно от най-добрите ми пътувания.\n\nДен 1: Смолян → Широка лъка → Триград (130км)\nДен 2: Триград → Ягодинска пещера → Доспат (140км)\nДен 3: Доспат → Батак → връщане (130км)\n\nПътищата са предимно черни, има и горски. Нужен е мотор с добро окачване и гуми за кал.',tags:['маршрут'],author:'marin',date:'2026-03-07',reactions:{like:['pesho','ivo','kabakchiev','manolov'],wrench:['ivo','pesho'],thanks:['ivo','kabakchiev','manolov','pesho','gosho']},likes:[],replies:[
+      {id:'r_rod_1',author:'ivo',body:'Страхотно! Някой ден ще го направим заедно. Пътят към Триград е **епичен** — особено спускането.',date:'2026-03-07',likes:['marin','kabakchiev']},
+      {id:'r_rod_2',author:'manolov',body:'Родопите са перфектни за ендуро. За Триград — внимавайте с камъните след дъжд, стават много хлъзгави.',date:'2026-03-08',likes:['marin','ivo','pesho']}
+    ]},
+    {id:'post_sbirka',zone:'chat',type:'e',title:'Неделна кафе-сбирка София — кой идва?',body:'Тази неделя от 10:00 в Garage Cafe. Носете добро настроение и истории от пътя!\n\nПравим я всяка неделя — дойдете да се запознаем. Новобранци добре дошли!',tags:['среща','софия'],author:'ivo',date:'2026-03-08',reactions:{like:['marin','pesho','gosho','motohaus','manolov'],wrench:[],thanks:['marin','pesho','gosho']},likes:[],replies:[
+      {id:'r_sb_1',author:'marin',body:'Идвам! Ще донеса снимки от Родопския рунд.',date:'2026-03-08',likes:['ivo','pesho']},
+      {id:'r_sb_2',author:'pesho',body:'Ще мина след работа. Ако някой има въпроси за окачване — носете мотора!',date:'2026-03-08',likes:['ivo','marin']}
+    ]},
+    // --- Demo posts (previously in seedDemoAccounts) ---
+    {id:'post_demo1',zone:'problem',type:'q',title:'Масло тече от предна вилка — WP XPLOR',body:'Забелязах масло на долните крачета след последното каране. Мотор: KTM EXC 300 2019. Някой имал ли е подобен проблем?\n\nТечът е малък, но видим. Мотоциклетът има 120 моточаса.',tags:['ktm','окачване'],author:'marin',date:'2026-03-04',reactions:{like:['pesho','ivo','gosho'],wrench:['pesho'],thanks:[]},likes:[],replies:[
+      {id:'r_d1_1',author:'pesho',body:'Класика — **семеринги**. При 120ч е нормално. Ела при мен за ревизия, става за ден.',date:'2026-03-04',likes:['marin','ivo']},
+      {id:'r_d1_2',author:'ivo',body:'При мен беше същото. Пешо ги смени за 3 часа. Препоръчвам SKF семеринги — по-издръжливи от оригиналните.',date:'2026-03-05',likes:['marin']}
+    ]},
+    {id:'post_demo2',zone:'newbie',type:'q',title:'Първа тренировка — какво да нося?',body:'Записах се при Манолов за 22 март. Какво оборудване ми трябва за начинаещ?\n\nИмам каска и ботуши. Какво друго е задължително?',tags:['екипировка','тренировка'],author:'ivo',date:'2026-03-05',reactions:{like:['marin','pesho','manolov','kabakchiev','gosho'],wrench:[],thanks:['manolov']},likes:[],replies:[
+      {id:'r_d2_1',author:'manolov',body:'Задължително: **каска, ботуши, ръкавици, наколенки**. Останалото е по избор за начало, но силно препоръчвам гръден протектор.',date:'2026-03-05',likes:['ivo','marin','pesho']},
+      {id:'r_d2_2',author:'marin',body:'Слушай Манолов! Аз на първата тренировка бях само с каска и ботуши — не беше приятно. Наколенките спасяват.',date:'2026-03-06',likes:['ivo','manolov']},
+      {id:'r_d2_3',author:'kabakchiev',body:'Добре дошъл! Не се притеснявай — Манолов е най-добрият за начинаещи. Ще те научи правилно от самото начало.',date:'2026-03-06',likes:['ivo','manolov','marin']},
+      {id:'r_d2_4',author:'pesho',body:'Виж при @elilison за екипировка — имат добри начални комплекти на разумна цена.',date:'2026-03-06',likes:['ivo','marin']}
+    ]},
+    // --- Plan & Skill zones ---
+    {id:'post_plan1',zone:'plan',type:'e',title:'Уикенд маршрут Рила — ниво средно',body:'Планирам маршрут за уикенда:\n\n**Самоков → Мальовица → Говедарци** (около 50км офроуд)\n\nТерен: горски пътища + каменисти участъци. Нужни са добри гуми и поне среден опит. Тръгваме в събота 8:00 от Самоков.\n\nКой е с нас?',tags:['маршрут'],author:'marin',date:'2026-03-07',reactions:{like:['ivo','pesho','manolov'],wrench:[],thanks:['ivo']},likes:[],replies:[
+      {id:'r_pl_1',author:'ivo',body:'Аз съм вътре! Ще дойда с Fantic-а. Има ли бензиностанция по маршрута?',date:'2026-03-07',likes:['marin']},
+      {id:'r_pl_2',author:'manolov',body:'Хубав маршрут. Участъкът след Мальовица е каменист — карайте внимателно, особено при мокро.',date:'2026-03-08',likes:['marin','ivo']}
+    ]},
+    {id:'post_skill1',zone:'skill',type:'e',title:'Техника за стръмни изкачвания — стъпка по стъпка',body:'Споделям какво научих от Манолов за стръмни **каменисти изкачвания**:\n\n1. Застани прав на степенките\n2. Тежестта напред — лакти горе\n3. Постоянен газ — НЕ дръпвай рязко\n4. Гледай 3-4 метра напред, не пред гумата\n5. Ако загубиш тракция — лек натиск на съединителя\n\nНай-честата грешка: седиш на седалката. Стани прав!',tags:['тренировка'],author:'manolov',date:'2026-03-06',reactions:{like:['marin','ivo','pesho','kabakchiev','gosho'],wrench:[],thanks:['marin','ivo','pesho','gosho']},likes:[],replies:[
+      {id:'r_sk_1',author:'kabakchiev',body:'Точно така. Бих добавил: при много стръмно — пусни въздух от предната гума до **0.6 бара**. Дава огромна разлика в тракцията.',date:'2026-03-06',likes:['manolov','marin','ivo','pesho']},
+      {id:'r_sk_2',author:'marin',body:'Мерси! Точно това ми трябваше. На последното каране се изложих точно защото седях на седалката.',date:'2026-03-07',likes:['manolov','ivo']}
     ]}
   ];
   saveForumPosts(seeds);
@@ -3924,7 +3989,7 @@ function deleteListing(listingId){
   }
   if(found){
     saveListings(listings);closeModal();
-    renderDynamicListings();renderFeed();refreshHome();
+    renderDynamicListings();refreshHome();
     showToast('✅ Обявата е изтрита','success');
   }else{showToast('Не можеш да изтриеш тази обява')}
 }
@@ -3949,7 +4014,7 @@ function submitListing(){
   var listing={id:'lst_'+Date.now(),author:user.id,type:document.getElementById('lstType').value,title:title,desc:desc,price:parseInt(document.getElementById('lstPrice').value)||0,city:(document.getElementById('lstCity').value||'').trim()||'Не е посочен',condition:document.getElementById('lstCond').value,date:new Date().toISOString().split('T')[0],active:true};
   var listings=getListings();listings.unshift(listing);saveListings(listings);
   document.getElementById('listingFormArea').innerHTML='';
-  renderDynamicListings();renderFeed();
+  renderDynamicListings();refreshHome();
   showToast('✅ Обявата е публикувана!','success');
 }
 function renderDynamicListings(){
@@ -3971,6 +4036,17 @@ function renderDynamicListings(){
     initCardObserver();
   });
 }
+
+// ===== EVENTS DATA LAYER =====
+var SEED_EVENTS=[
+  {id:'extreme-fest-2026',title:'Extreme Enduro Fest',date:'2026-03-15',location:'Карлово',type:'race',registrants:67},
+  {id:'bgx-krug3',title:'BG-X Ендуро — Кръг 3',date:'2026-03-15',location:'Карлово',type:'race',registrants:23},
+  {id:'training-22mar',title:'Тренировка при Манолов',date:'2026-03-22',location:'Манолово',type:'training',registrants:8},
+  {id:'rila-enduro-sunday',title:'Рила Ендуро Sunday',date:'2026-03-29',location:'Самоков',type:'ride',registrants:6},
+  {id:'six-days-2026',title:'Six Days Crazy Job',date:'2026-04-15',location:'Казанлък',type:'race',registrants:47},
+  {id:'bgx-krug4',title:'BG-X Ендуро — Кръг 4',date:'2026-05-15',location:'TBA',type:'race',registrants:0}
+];
+function getEvents(){return SEED_EVENTS}
 
 // ===== ДИНАМИЧЕН ВЕСТНИК (FEED) =====
 var FEED_TYPES={
@@ -4010,8 +4086,35 @@ function buildFeed(){
       }
     });
   });
+  // Upcoming events — closer date = higher heat
+  var today=now.toISOString().split('T')[0];
+  getEvents().forEach(function(e){
+    if(e.date>=today){
+      var daysUntil=Math.max(0,Math.round((new Date(e.date)-now)/(1000*60*60*24)));
+      var heat=Math.max(2,10-daysUntil*0.5);
+      if(e.registrants>20)heat+=2;
+      items.push({type:'event_soon',heat:heat,title:e.title,date:e.date,location:e.location||'',eventId:e.id,registrants:e.registrants||0});
+    }
+  });
   items.sort(function(a,b){return b.heat-a.heat});
-  return items.slice(0,10);
+  // Ensure content diversity: pick top items but guarantee at least 1 of each available type
+  var result=[];var seenTypes={};var maxItems=12;
+  // First pass: top items by heat
+  items.forEach(function(item){
+    if(result.length>=maxItems)return;
+    result.push(item);
+    seenTypes[item.type]=true;
+  });
+  // Second pass: if a type was missed, inject its best item
+  var allTypes=['forum_hot','new_listing','event_soon','build_thread'];
+  allTypes.forEach(function(t){
+    if(seenTypes[t])return;
+    var best=null;
+    for(var i=0;i<items.length;i++){if(items[i].type===t){best=items[i];break}}
+    if(best){result.push(best);seenTypes[t]=true}
+  });
+  result.sort(function(a,b){return b.heat-a.heat});
+  return result;
 }
 function renderFeed(){
   var container=document.getElementById('dynamicFeed');if(!container)return;
@@ -4032,8 +4135,15 @@ function renderFeed(){
       }else if(item.type==='build_thread'){
         meta='🔧 '+(SYSTEM_ICONS[item.system]?SYSTEM_ICONS[item.system].name:(item.system||''));
         onclick=item.postId?"location.hash=\'#forum/post/"+item.postId+"\'":"go(\'forum\')";
+      }else if(item.type==='event_soon'){
+        meta='📍 '+escHtml(item.location||'')+(item.registrants?' · '+item.registrants+' записани':'');
+        onclick="go(\'events\')";
       }
-      var card='<div class="feed-card card-enter" data-enter-delay="'+idx+'" onclick="'+onclick+'"><div class="feed-card-badge" style="background:'+ft.color+'22;color:'+ft.color+'">'+ft.emoji+' '+ft.label+'</div>'+extraBadge+'<div class="feed-card-title">'+escHtml(item.title)+'</div><div class="feed-card-meta">'+userAvatar(author,18)+' <strong class="link" onclick="event.stopPropagation();openProfile(\''+item.author+'\')">'+escHtml(author.name)+'</strong> · '+meta+' · <span class="time-ago">'+timeAgo(item.date)+'</span></div></div>';
+      var authorHtml='';
+      if(item.author){
+        authorHtml=userAvatar(author,18)+' <strong class="link" onclick="event.stopPropagation();openProfile(\''+item.author+'\')">'+escHtml(author.name)+'</strong> · ';
+      }
+      var card='<div class="feed-card card-enter" data-enter-delay="'+idx+'" onclick="'+onclick+'"><div class="feed-card-badge" style="background:'+ft.color+'22;color:'+ft.color+'">'+ft.emoji+' '+ft.label+'</div>'+extraBadge+'<div class="feed-card-title">'+escHtml(item.title)+'</div><div class="feed-card-meta">'+authorHtml+meta+' · <span class="time-ago">'+timeAgo(item.date)+'</span></div></div>';
       // "All caught up" divider after 5th item
       if(idx===4&&items.length>5)card+='<div class="caught-up card-enter" data-enter-delay="5"><div class="caught-up-icon">✅</div><div class="caught-up-text">Видя всичко ново</div><div class="caught-up-sub">Можеш да спреш тук или да продължиш надолу</div></div>';
       return card;
@@ -4065,28 +4175,58 @@ function sendMessage(toUserId){
   var sent=getMessages(user.id+'_sent');sent.unshift(msg);saveMessages(user.id+'_sent',sent);
   closeModal();showToast('✅ Съобщението е изпратено!','success');updateInboxBadge();
 }
-function openInbox(){
+function openInbox(tab){
   var user=getCurrentUser();if(!user){toggleAuthModal();return}
-  var inbox=getMessages(user.id);var users=getUsers();
+  var activeTab=tab||'notif';
   var modal=document.getElementById('modalContent');
-  if(!inbox.length){
-    modal.innerHTML='<div class="mod-form-title">✉️ ВХОДЯЩА ПОЩА</div><div class="empty-state"><div class="empty-state-icon">✉️</div><div class="empty-state-title">ПРАЗНА КУТИЯ</div><div class="empty-state-desc">Входящата ти кутия е празна. Когато някой ти пише, съобщенията ще се появят тук.</div></div>';
+  var inbox=getMessages(user.id);var notifs=getNotifications(user.id);var users=getUsers();
+  var unreadN=notifs.filter(function(n){return!n.read}).length;
+  var unreadM=inbox.filter(function(m){return!m.read}).length;
+  var html='<div class="mod-form-title">ВХОДЯЩА КУТИЯ</div>';
+  html+='<div class="inbox-tabs">';
+  html+='<div class="inbox-tab'+(activeTab==='notif'?' active':'')+'" onclick="openInbox(\'notif\')">🔔 Известия'+(unreadN?' <span class="inbox-tab-count">'+unreadN+'</span>':'')+'</div>';
+  html+='<div class="inbox-tab'+(activeTab==='msg'?' active':'')+'" onclick="openInbox(\'msg\')">✉️ Съобщения'+(unreadM?' <span class="inbox-tab-count">'+unreadM+'</span>':'')+'</div>';
+  html+='</div>';
+  if(activeTab==='notif'){
+    if(!notifs.length){
+      html+='<div class="empty-state"><div class="empty-state-icon">🔔</div><div class="empty-state-title">НЯМА ИЗВЕСТИЯ</div><div class="empty-state-desc">Когато някой отговори, реагира или те спомене — ще видиш тук.</div></div>';
+    }else{
+      notifs.forEach(function(n){
+        var from=users[n.from]||{name:'Непознат',emoji:'👤'};
+        var icon=n.type==='reply'?'💬':n.type==='mention'?'📢':n.preview==='wrench'?'🔧':n.preview==='thanks'?'🙏':'👍';
+        var text='';
+        if(n.type==='reply')text='<strong>'+escHtml(from.name)+'</strong> отговори на <strong>'+escHtml(n.postTitle||'')+'</strong>';
+        else if(n.type==='reaction'){var emo=n.preview==='like'?'👍':n.preview==='wrench'?'🔧':'🙏';text='<strong>'+escHtml(from.name)+'</strong> реагира '+emo+' на <strong>'+escHtml(n.postTitle||'')+'</strong>'}
+        else if(n.type==='mention')text='<strong>'+escHtml(from.name)+'</strong> те спомена в <strong>'+escHtml(n.postTitle||'')+'</strong>';
+        html+='<div class="notif-item'+(n.read?'':' unread')+'" onclick="openForumThread(\''+n.postId+'\')">';
+        html+='<div class="notif-row"><span class="notif-icon">'+icon+'</span><div class="notif-text">'+text+'</div></div>';
+        if(n.type==='reply'&&n.preview)html+='<div class="notif-preview">'+escHtml(n.preview)+'</div>';
+        html+='<div class="notif-meta">'+timeAgo(n.date)+(n.time?' · '+n.time:'')+'</div>';
+        html+='</div>';
+      });
+    }
+    notifs.forEach(function(n){n.read=true});saveNotifications(user.id,notifs);
   }else{
-    var html='<div class="mod-form-title">✉️ ВХОДЯЩА ПОЩА</div>';
-    inbox.forEach(function(msg){
-      var from=users[msg.from]||{name:'Непознат',emoji:'👤'};
-      html+='<div class="msg-item'+(msg.read?'':' msg-unread')+'"><div class="msg-item-h"><span>'+userAvatar(from,24)+' <strong class="link" onclick="event.stopPropagation();openProfile(\''+msg.from+'\')">'+escHtml(from.name)+'</strong></span><span class="meta time-ago" title="'+escHtml(msg.date)+'">'+timeAgo(msg.date)+(msg.time?' · '+msg.time:'')+'</span></div><div class="msg-item-body">'+escHtml(msg.body)+'</div></div>';
-    });
-    modal.innerHTML=html;
+    if(!inbox.length){
+      html+='<div class="empty-state"><div class="empty-state-icon">✉️</div><div class="empty-state-title">ПРАЗНА КУТИЯ</div><div class="empty-state-desc">Входящата ти кутия е празна. Когато някой ти пише, съобщенията ще се появят тук.</div></div>';
+    }else{
+      inbox.forEach(function(msg){
+        var from=users[msg.from]||{name:'Непознат',emoji:'👤'};
+        html+='<div class="msg-item'+(msg.read?'':' msg-unread')+'"><div class="msg-item-h"><span>'+userAvatar(from,24)+' <strong class="link" onclick="event.stopPropagation();openProfile(\''+msg.from+'\')">'+escHtml(from.name)+'</strong></span><span class="meta time-ago" title="'+escHtml(msg.date)+'">'+timeAgo(msg.date)+(msg.time?' · '+msg.time:'')+'</span></div><div class="msg-item-body">'+escHtml(msg.body)+'</div></div>';
+      });
+    }
+    inbox.forEach(function(m){m.read=true});saveMessages(user.id,inbox);
   }
+  modal.innerHTML=html;
   document.getElementById('modalBg').classList.add('on');
-  inbox.forEach(function(m){m.read=true});saveMessages(user.id,inbox);updateInboxBadge();
+  updateInboxBadge();
 }
 function updateInboxBadge(){
   var badge=document.getElementById('inboxBadge');if(!badge)return;
   var user=getCurrentUser();if(!user){badge.style.display='none';return}
   var inbox=getMessages(user.id);
-  var unread=inbox.filter(function(m){return!m.read}).length;
+  var notifs=getNotifications(user.id);
+  var unread=inbox.filter(function(m){return!m.read}).length+notifs.filter(function(n){return!n.read}).length;
   badge.textContent=unread;badge.style.display=unread?'':'none';
 }
 function seedMessages(){
@@ -4096,6 +4236,47 @@ function seedMessages(){
     saveMessages('marin',[
       {id:'msg_seed1',from:'ivo',to:'marin',body:'Здравей! Видях обявата ти за пружините XPLOR 5.0. Още ли са налични? Аз съм 92кг, стават ли ми?',date:'2026-03-05',time:'14:30',read:false},
       {id:'msg_seed2',from:'pesho',to:'marin',body:'Марин, ребилдът на вилката е готов за следващия сервиз. Маслото на горната камера трябва да се смени. Обади се за час.',date:'2026-03-04',time:'10:15',read:false}
+    ]);
+  }
+}
+
+// ===== НОТИФИКАЦИИ =====
+function getNotifications(uid){try{return JSON.parse(localStorage.getItem('orNotif_'+uid))||[]}catch(e){return[]}}
+function saveNotifications(uid,notifs){localStorage.setItem('orNotif_'+uid,JSON.stringify(notifs))}
+function addNotification(toUid,notif){
+  if(!toUid||toUid===notif.from)return;
+  var notifs=getNotifications(toUid);
+  notifs.unshift(notif);
+  if(notifs.length>50)notifs=notifs.slice(0,50);
+  saveNotifications(toUid,notifs);
+}
+function extractMentions(text){
+  var users=getUsers();var found=[];
+  var re=/@([\w\u0400-\u04FF]+)/g;var m;
+  while((m=re.exec(text))!==null){if(users[m[1]]&&found.indexOf(m[1])===-1)found.push(m[1])}
+  return found;
+}
+function openForumThread(postId){
+  closeModal();
+  var posts=getForumPosts();
+  var post=null;
+  for(var i=0;i<posts.length;i++){if(posts[i].id===postId){post=posts[i];break}}
+  if(!post){showToast('Темата не е намерена','error');return}
+  go('forum');
+  enterZone(post.zone);
+  setTimeout(function(){
+    var el=document.querySelector('[data-post-id="'+postId+'"]');
+    if(el){toggleUserThread(postId);el.scrollIntoView({behavior:'smooth',block:'start'})}
+  },250);
+}
+function seedNotifications(){
+  var uid=getCurrentUserId();if(!uid)return;
+  var notifs=getNotifications(uid);if(notifs.length>0)return;
+  if(uid==='marin'){
+    saveNotifications('marin',[
+      {id:'notif_seed1',type:'reply',from:'pesho',postId:'post_yz250f',postTitle:'Вибрация на 6000 оборота',preview:'Провери контратежестта на коляновия вал...',date:'2026-03-07',time:'16:42',read:false},
+      {id:'notif_seed2',type:'reaction',from:'ivo',postId:'post_yz250f',postTitle:'Вибрация на 6000 оборота',preview:'like',date:'2026-03-07',time:'18:10',read:false},
+      {id:'notif_seed3',type:'mention',from:'kabakchiev',postId:'post_tpi',postTitle:'EXC 300 TPI — настройки на впръскването',preview:'@marin ти какъв филтър ползваш на...',date:'2026-03-08',time:'09:30',read:false}
     ]);
   }
 }
@@ -4176,6 +4357,9 @@ function renderHomeStats(){
 }
 function renderHomeLatestTopics(){
   var el=document.getElementById('homeLatestTopics');if(!el)return;
+  // Skip if feed already shows forum items (avoid duplication)
+  var feedEl=document.getElementById('dynamicFeed');
+  if(feedEl&&feedEl.children.length>0){el.innerHTML='';return}
   var posts=getForumPosts().slice(0,3);
   if(!posts.length){el.innerHTML='';return}
   skeletonThenRender('homeLatestTopics','topics',3,function(){
@@ -4196,6 +4380,9 @@ function renderHomeLatestTopics(){
 }
 function renderHomeNewListings(){
   var el=document.getElementById('homeNewListings');if(!el)return;
+  // Skip if feed already shows listing items (avoid duplication)
+  var feedEl=document.getElementById('dynamicFeed');
+  if(feedEl&&feedEl.children.length>0){el.innerHTML='';return}
   var listings=getListings().concat(typeof SEED_LISTINGS!=='undefined'?SEED_LISTINGS:[]).slice(0,6);
   if(!listings.length){el.innerHTML='';return}
   var users=getUsers();
@@ -4217,7 +4404,7 @@ function renderHomeCta(){
   var el=document.getElementById('homeCta');if(!el)return;
   el.style.display=getCurrentUser()?'none':'';
 }
-function refreshHome(){renderHomeStats();renderHomeLatestTopics();renderHomeNewListings();renderHomeCta();showFreshnessBanner()}
+function refreshHome(){renderFeed();renderHomeStats();renderHomeLatestTopics();renderHomeNewListings();renderHomeCta();showFreshnessBanner()}
 
 // ===== CELEBRATION MOMENTS =====
 var CONFETTI_COLORS=['#e8622c','#c49a6c','#5a8a3c','#d4943c','#4682b4','#e8e0d4','#b87333'];
@@ -4462,13 +4649,7 @@ function initV10(){
   updateGarageBadge();
   renderHotToday();
   renderForYourBike();
-  // Override toggleThread to inject biz panels
-  var ftWithTags=document.querySelectorAll('.ft[data-tags]');
-  ftWithTags.forEach(function(ft){
-    if(ft.getAttribute('onclick')&&ft.getAttribute('onclick').indexOf('toggleThread')>-1){
-      ft.setAttribute('onclick','toggleThreadV10(this)');
-    }
-  });
+  // toggleThread/toggleThreadV10 no longer needed (all threads are data-driven)
   // Seed service demo data
   seedServiceDemo();
   // Seed mods demo data
@@ -4485,9 +4666,10 @@ function initV10(){
   refreshAuthUI();
   seedForumDemo();
   renderSavedPosts();
+  updateZoneStats();
   renderDynamicListings();
-  renderFeed();
   seedMessages();
+  seedNotifications();
   updateInboxBadge();
   updateStreak();
   checkEventRegistrations();

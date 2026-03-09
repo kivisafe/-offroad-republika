@@ -730,6 +730,7 @@ body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;overf
 .th-post-body a{color:var(--orange);text-decoration:underline;text-underline-offset:2px}
 .th-post-body a:hover{color:var(--earth)}
 .th-post-body blockquote,.th-post-body .md-quote{border-left:3px solid var(--orange);padding:4px 10px;margin:6px 0;background:rgba(232,98,44,.04);border-radius:0 4px 4px 0;color:var(--text2);font-style:italic}
+.md-img{max-width:100%;border-radius:8px;margin:8px 0;cursor:pointer;border:1px solid var(--border)}
 
 /* ===== FORUM EDIT/DELETE/REPORT/SOLUTION ===== */
 .post-deleted{opacity:.5;font-style:italic}
@@ -1037,6 +1038,20 @@ body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;overf
 .msg-item.msg-unread{border-left:3px solid var(--orange);background:rgba(232,98,44,.03)}
 .msg-item-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .msg-item-body{font:400 12px 'Exo 2',sans-serif;color:var(--text2);line-height:1.5}
+.inbox-tabs{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--border)}
+.inbox-tab{flex:1;padding:8px;text-align:center;cursor:pointer;font:600 12px 'Exo 2',sans-serif;color:var(--text2);border-bottom:2px solid transparent;transition:.2s}
+.inbox-tab:hover{color:var(--text)}
+.inbox-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+.inbox-tab-count{background:var(--orange);color:var(--bg);font:700 9px 'JetBrains Mono',monospace;padding:1px 5px;border-radius:8px;margin-left:4px}
+.notif-item{padding:10px;margin-bottom:6px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:background .2s}
+.notif-item:hover{background:rgba(232,98,44,.06)}
+.notif-item.unread{border-left:3px solid var(--orange);background:rgba(232,98,44,.03)}
+.notif-row{display:flex;align-items:flex-start;gap:6px}
+.notif-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.notif-text{font:400 12px 'Exo 2',sans-serif;color:var(--text2);line-height:1.4}
+.notif-text strong{color:var(--text)}
+.notif-preview{font:400 11px 'Exo 2',sans-serif;color:var(--text2);opacity:.7;margin:4px 0 0 22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notif-meta{font:400 10px 'JetBrains Mono',monospace;color:var(--text2);margin-top:4px;opacity:.6}
 
 /* ===== POLISH: AVATARS, TRANSITIONS, TOAST ===== */
 .ava-circle{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:700;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;flex-shrink:0;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.3);vertical-align:middle}
