@@ -645,7 +645,9 @@ function executeSearch(q){
   var drop=document.getElementById('searchDrop');if(!drop)return;
   if(q.length<2){hideSearchDrop();return}
   var ql=q.toLowerCase();
-  var results={users:[],posts:[],listings:[],directory:[]};
+  // #hashtag → direct tag filter
+  if(ql.charAt(0)==='#'&&ql.length>2){hideSearchDrop();filterByTag(q.substring(1));var si=document.getElementById('searchIn');if(si)si.blur();return}
+  var results={users:[],posts:[],listings:[],directory:[],events:[],tags:[]};
   // 1. Users
   var users=getUsers();
   Object.keys(users).forEach(function(uid){
@@ -653,9 +655,9 @@ function executeSearch(q){
     if((u.name+' '+(u.city||'')+' '+(u.bio||'')).toLowerCase().indexOf(ql)>-1)
       results.users.push({id:uid,user:u});
   });
-  // 2. Forum posts
+  // 2. Forum posts (title, body, zone + tags)
   getForumPosts().forEach(function(p){
-    if((p.title+' '+(p.body||'')+' '+(p.zone||'')).toLowerCase().indexOf(ql)>-1)
+    if((p.title+' '+(p.body||'')+' '+(p.zone||'')+' '+(Array.isArray(p.tags)?p.tags.join(' '):'')).toLowerCase().indexOf(ql)>-1)
       results.posts.push(p);
   });
   // 3. Listings
@@ -672,6 +674,20 @@ function executeSearch(q){
         results.directory.push({key:key,biz:biz});
     });
   }
+  // 5. Events
+  var events=typeof getEvents==='function'?getEvents():[];
+  events.forEach(function(ev){
+    if((ev.title+' '+(ev.location||'')+' '+(ev.type||'')).toLowerCase().indexOf(ql)>-1)
+      results.events.push(ev);
+  });
+  // 6. Tag hints — unique tags matching query
+  var tagSet={};
+  getForumPosts().forEach(function(p){
+    if(Array.isArray(p.tags))p.tags.forEach(function(t){
+      if(t.toLowerCase().indexOf(ql)>-1)tagSet[t.toLowerCase()]=t;
+    });
+  });
+  results.tags=Object.keys(tagSet).map(function(k){return tagSet[k]}).slice(0,5);
   renderSearchResults(results,q);
 }
 function renderSearchResults(results,query){
@@ -710,6 +726,20 @@ function renderSearchResults(results,query){
       return '<div class="search-item" onclick="location.hash=\'#profile/'+escHtml(d.key)+'\'">'+d.biz.icon+' '+escHtml(d.biz.name)+'<span style="color:var(--text2);margin-left:auto;font-size:10px">'+escHtml(d.biz.type||'')+'</span></div>';
     }).join('');
     if(results.directory.length>5)html+='<div class="search-item" style="color:var(--orange);font-size:11px" onclick="go(\'dir\')">Виж всички '+results.directory.length+' →</div>';
+  }
+  // Events
+  if(results.events&&results.events.length){
+    html+='<div class="search-cat">🏁 СЪБИТИЯ</div>';
+    html+=results.events.slice(0,5).map(function(ev){
+      return '<div class="search-item" onclick="go(\'events\')">🏁 '+escHtml(ev.title)+'<span style="color:var(--text2);margin-left:auto;font-size:10px">'+escHtml(ev.location||'')+' · '+escHtml(ev.date||'')+'</span></div>';
+    }).join('');
+  }
+  // Tags
+  if(results.tags&&results.tags.length){
+    html+='<div class="search-cat">🏷️ ТАГОВЕ</div>';
+    html+=results.tags.map(function(t){
+      return '<div class="search-item" onclick="hideSearchDrop();filterByTag(\''+escHtml(t)+'\')"><span class="hashtag">#'+escHtml(t)+'</span><span style="color:var(--text2);margin-left:auto;font-size:10px">Виж теми →</span></div>';
+    }).join('');
   }
   if(!html)html='<div class="search-item" style="color:var(--text2)">Няма резултати за "'+escHtml(query)+'"</div>';
   drop.innerHTML=html;
