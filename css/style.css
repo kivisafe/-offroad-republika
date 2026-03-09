@@ -1053,6 +1053,42 @@ body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;overf
 .notif-preview{font:400 11px 'Exo 2',sans-serif;color:var(--text2);opacity:.7;margin:4px 0 0 22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .notif-meta{font:400 10px 'JetBrains Mono',monospace;color:var(--text2);margin-top:4px;opacity:.6}
 
+/* ===== BUSINESS INTEL DASHBOARD ===== */
+.intel-section{background:rgba(232,98,44,.02);border:1px solid rgba(232,98,44,.15);border-radius:8px}
+.intel-tags-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.intel-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;font:400 11px 'Exo 2',sans-serif}
+.intel-badge{font:700 9px 'JetBrains Mono',monospace;color:var(--orange);background:rgba(232,98,44,.12);padding:1px 5px;border-radius:8px}
+.intel-search-badge{font:400 9px 'JetBrains Mono',monospace;color:var(--text2);opacity:.8}
+.intel-hot{padding:8px;margin-bottom:4px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:background .2s}
+.intel-hot:hover{background:rgba(232,98,44,.06)}
+.intel-hot-title{font:500 12px 'Exo 2',sans-serif;color:var(--text)}
+.intel-hot-meta{font:400 10px 'JetBrains Mono',monospace;color:var(--text2);margin-top:3px}
+.intel-demand{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.intel-demand-tag{font:500 11px 'Exo 2',sans-serif;color:var(--text2);min-width:70px}
+.intel-demand-bar{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.intel-demand-fill{height:100%;background:var(--orange);border-radius:3px;transition:width .3s}
+.intel-demand-n{font:400 10px 'JetBrains Mono',monospace;color:var(--text2);min-width:20px;text-align:right}
+
+/* Intel tag subscription input */
+.intel-selected-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:24px}
+.intel-sel-tag{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;background:rgba(232,98,44,.12);border:1px solid var(--orange);border-radius:12px;font:500 11px 'Exo 2',sans-serif;color:var(--orange)}
+.intel-sel-x{cursor:pointer;font-size:10px;color:var(--text2);margin-left:2px;transition:color .2s}
+.intel-sel-x:hover{color:var(--orange)}
+.intel-tag-input-wrap{position:relative}
+.intel-tag-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.intel-tag-opt{padding:8px 10px;cursor:pointer;font:400 12px 'Exo 2',sans-serif;color:var(--text);transition:background .15s;border-bottom:1px solid rgba(255,255,255,.03)}
+.intel-tag-opt:last-child{border-bottom:none}
+.intel-tag-opt:hover{background:rgba(232,98,44,.08)}
+.intel-tag-new{color:var(--orange);font-style:italic}
+
+/* Intel respond button & DM */
+.intel-respond-btn{display:block;width:100%;margin-top:6px;padding:6px;background:rgba(232,98,44,.1);border:1px solid var(--orange);border-radius:6px;color:var(--orange);font:600 11px 'Exo 2',sans-serif;cursor:pointer;transition:background .2s,transform .1s;text-align:center}
+.intel-respond-btn:hover{background:rgba(232,98,44,.2)}
+.intel-respond-btn:active{transform:scale(.98)}
+.msg-intel{border-left:3px solid var(--orange);background:rgba(232,98,44,.03)}
+.intel-msg-badge{font:600 9px 'JetBrains Mono',monospace;padding:1px 6px;border-radius:8px;background:rgba(232,98,44,.12);color:var(--orange);margin-left:4px}
+.intel-link{color:var(--orange);text-decoration:underline;word-break:break-all}
+
 /* ===== POLISH: AVATARS, TRANSITIONS, TOAST ===== */
 .ava-circle{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:700;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;flex-shrink:0;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.3);vertical-align:middle}
 .ava-role-dot{position:absolute;bottom:-1px;right:-1px;font-size:8px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:2px solid var(--bg)}

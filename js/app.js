@@ -646,7 +646,7 @@ function executeSearch(q){
   if(q.length<2){hideSearchDrop();return}
   var ql=q.toLowerCase();
   // #hashtag → direct tag filter
-  if(ql.charAt(0)==='#'&&ql.length>2){hideSearchDrop();filterByTag(q.substring(1));var si=document.getElementById('searchIn');if(si)si.blur();return}
+  if(ql.charAt(0)==='#'&&ql.length>2){hideSearchDrop();trackTagSearch(q.substring(1));filterByTag(q.substring(1));var si=document.getElementById('searchIn');if(si)si.blur();return}
   var results={users:[],posts:[],listings:[],directory:[],events:[],tags:[]};
   // 1. Users
   var users=getUsers();
@@ -738,7 +738,7 @@ function renderSearchResults(results,query){
   if(results.tags&&results.tags.length){
     html+='<div class="search-cat">🏷️ ТАГОВЕ</div>';
     html+=results.tags.map(function(t){
-      return '<div class="search-item" onclick="hideSearchDrop();filterByTag(\''+escHtml(t)+'\')"><span class="hashtag">#'+escHtml(t)+'</span><span style="color:var(--text2);margin-left:auto;font-size:10px">Виж теми →</span></div>';
+      return '<div class="search-item" onclick="hideSearchDrop();trackTagSearch(\''+escHtml(t)+'\');filterByTag(\''+escHtml(t)+'\')"><span class="hashtag">#'+escHtml(t)+'</span><span style="color:var(--text2);margin-left:auto;font-size:10px">Виж теми →</span></div>';
     }).join('');
   }
   if(!html)html='<div class="search-item" style="color:var(--text2)">Няма резултати за "'+escHtml(query)+'"</div>';
@@ -2075,7 +2075,7 @@ function getUsers(){try{return JSON.parse(localStorage.getItem('orUsers'))||{}}c
 function saveUsers(u){localStorage.setItem('orUsers',JSON.stringify(u))}
 function getCurrentUserId(){return localStorage.getItem('orSession')||null}
 function getCurrentUser(){var id=getCurrentUserId();if(!id)return null;var u=getUsers();return u[id]||null}
-function loginAs(userId){localStorage.setItem('orSession',userId);refreshAuthUI();showGreeting();refreshTierDisplay();renderGarage();updateGarageBadge();seedMessages();seedNotifications();updateInboxBadge();updateStreak();refreshHome()}
+function loginAs(userId){localStorage.setItem('orSession',userId);refreshAuthUI();showGreeting();refreshTierDisplay();renderGarage();updateGarageBadge();seedMessages();seedNotifications();seedBizSubscriptions();updateInboxBadge();updateStreak();refreshHome()}
 function logout(){localStorage.removeItem('orSession');refreshAuthUI();showGreeting();refreshTierDisplay();renderGarage();updateGarageBadge();refreshHome();showToast('👋 До скоро!')}
 
 function seedDemoAccounts(){
@@ -2833,6 +2833,8 @@ function renderDynamicProfile(userId){
 
   // Business analytics (own profile only)
   if(isMe&&(user.role==='business'||user.role==='mechanic'||user.role==='trainer'))h+=renderBizAnalytics(userId);
+  // Business Intel dashboard (own profile, biz/mech only)
+  if(isMe&&(user.role==='business'||user.role==='mechanic'))h+=renderBizIntel(userId);
   // Accumulated value (own profile)
   if(isMe)h+=renderAccumulatedValue(userId);
 
@@ -2895,6 +2897,7 @@ var _profPricingCount=0;
 
 var _profProductCount=0;
 var _profOfferCount=0;
+var _profSubscribedTags=[];
 
 function renderBizEditFields(user,bp){
   bp=bp||{};
@@ -2924,7 +2927,83 @@ function renderBizEditFields(user,bp){
     offers.forEach(function(o,i){h+=renderOfferRow(i,o);_profOfferCount=i+1});
   }else{h+=renderOfferRow(0,{});_profOfferCount=1}
   h+='</div><span style="display:inline-block;margin-top:4px;font:500 11px \'Exo 2\',sans-serif;color:var(--orange);cursor:pointer" onclick="addProfOfferRow()">+ Добави оферта</span></div>';
+  // Tag subscriptions
+  h+=renderTagSubscriptionUI(bp);
   return h;
+}
+
+function renderTagSubscriptionUI(bp){
+  bp=bp||{};
+  var existingSubs=bp.subscribedTags||[];
+  _profSubscribedTags=existingSubs.slice();
+  var h='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:12px 0 6px;border-top:1px solid var(--border);padding-top:10px">📡 ТАГОВЕ ЗА СЛЕДЕНЕ</div>';
+  h+='<div class="prof-edit-field"><div style="font:400 11px \'Exo 2\',sans-serif;color:var(--text2);margin-bottom:6px">Пиши таг и избери от списъка или добави свой (макс. 10)</div>';
+  // Selected tags as removable pills
+  h+='<div class="intel-selected-tags" id="profSubSelectedTags">';
+  existingSubs.forEach(function(t){
+    h+='<span class="intel-sel-tag">'+escHtml(t)+' <span class="intel-sel-x" onclick="removeSubTag(\''+escHtml(t)+'\')">✕</span></span>';
+  });
+  h+='</div>';
+  // Input with autocomplete
+  h+='<div class="intel-tag-input-wrap" style="position:relative">';
+  h+='<input class="prof-edit-input" id="profSubTagInput" placeholder="Напиши таг... (напр. окачване, ktm, масла)" autocomplete="off" oninput="onSubTagInput(this.value)" onkeydown="onSubTagKeydown(event)">';
+  h+='<div class="intel-tag-dropdown" id="profSubTagDrop"></div>';
+  h+='</div></div>';
+  return h;
+}
+function onSubTagInput(val){
+  var drop=document.getElementById('profSubTagDrop');if(!drop)return;
+  var q=(val||'').trim().toLowerCase();
+  if(q.length<1){drop.innerHTML='';drop.style.display='none';return}
+  var allTags=getAllTags();
+  var matches=allTags.filter(function(t){return t.toLowerCase().indexOf(q)>-1&&_profSubscribedTags.indexOf(t)===-1});
+  // Check if exact match exists
+  var exactExists=allTags.some(function(t){return t.toLowerCase()===q});
+  var alreadyAdded=_profSubscribedTags.some(function(t){return t.toLowerCase()===q});
+  var html='';
+  matches.slice(0,8).forEach(function(t){
+    html+='<div class="intel-tag-opt" onclick="addSubTag(\''+escHtml(t)+'\')"><span class="hashtag">#'+escHtml(t)+'</span></div>';
+  });
+  // If no exact match and not already added — offer to create custom
+  if(!exactExists&&!alreadyAdded&&q.length>=2){
+    html+='<div class="intel-tag-opt intel-tag-new" onclick="addSubTag(\''+escHtml(q)+'\')">+ Създай <strong>#'+escHtml(q)+'</strong></div>';
+  }
+  if(!html){drop.style.display='none';return}
+  drop.innerHTML=html;drop.style.display='block';
+}
+function onSubTagKeydown(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    var input=document.getElementById('profSubTagInput');if(!input)return;
+    var val=(input.value||'').trim().toLowerCase();if(val.length<2)return;
+    // Pick first match or create custom
+    var allTags=getAllTags();
+    var match=allTags.find(function(t){return t.toLowerCase()===val});
+    addSubTag(match||val);
+  }
+}
+function addSubTag(tag){
+  if(!tag)return;
+  tag=tag.toLowerCase();
+  if(_profSubscribedTags.indexOf(tag)>-1){showToast('Вече следиш #'+tag);return}
+  if(_profSubscribedTags.length>=10){showToast('Максимум 10 тагове за следене');return}
+  _profSubscribedTags.push(tag);
+  refreshSubTagPills();
+  var input=document.getElementById('profSubTagInput');if(input){input.value='';input.focus()}
+  var drop=document.getElementById('profSubTagDrop');if(drop){drop.innerHTML='';drop.style.display='none'}
+}
+function removeSubTag(tag){
+  var idx=_profSubscribedTags.indexOf(tag);
+  if(idx>-1)_profSubscribedTags.splice(idx,1);
+  refreshSubTagPills();
+}
+function refreshSubTagPills(){
+  var container=document.getElementById('profSubSelectedTags');if(!container)return;
+  var html='';
+  _profSubscribedTags.forEach(function(t){
+    html+='<span class="intel-sel-tag">'+escHtml(t)+' <span class="intel-sel-x" onclick="removeSubTag(\''+escHtml(t)+'\')">✕</span></span>';
+  });
+  container.innerHTML=html;
 }
 
 function renderProductRow(idx,p){
@@ -2983,6 +3062,8 @@ function renderMechEditFields(user,bp){
     existingPricing.forEach(function(p,i){h+=renderPricingRow(i,p.service,p.price);_profPricingCount=i+1});
   }else{h+=renderPricingRow(0,'','');_profPricingCount=1}
   h+='</div><span style="display:inline-block;margin-top:4px;font:500 11px \'Exo 2\',sans-serif;color:var(--orange);cursor:pointer" onclick="addProfPricingRow()">+ Добави услуга</span></div>';
+  // Tag subscriptions for mechanic too
+  h+=renderTagSubscriptionUI(bp);
   return h;
 }
 function renderPricingRow(idx,service,price){
@@ -3085,6 +3166,7 @@ function saveProfileEdits(){
       if(offers.length)bp.tabs.push({id:'offers',label:'🏷️ Оферти'});
     }
     if(user.bio)bp.desc=user.bio;
+    bp.subscribedTags=_profSubscribedTags.slice();
     saveBizProfile(user.id,bp);
   }
   if(user.role==='mechanic'){
@@ -3100,6 +3182,7 @@ function saveProfileEdits(){
     });
     bp.pricing=pricing;
     if(user.bio)bp.desc=user.bio;
+    bp.subscribedTags=_profSubscribedTags.slice();
     saveBizProfile(user.id,bp);
   }
   if(user.role==='trainer'){
@@ -3307,6 +3390,8 @@ function submitNewTopic(zone){
   // First post detection
   var isFirstPost=!posts.some(function(p){return p.author===user.id});
   posts.unshift(post);saveForumPosts(posts);
+  // Business Intel — notify subscribed businesses
+  if(post.tags.length)notifySubscribedBusinesses(post.tags,post.id,post.title,user.id);
   clearForumDraft(zone);
   document.getElementById('newTopicFormArea').innerHTML='';
   _ntSelectedType='q';_ntSelectedTags=[];_ntShowPreview=false;
@@ -4223,14 +4308,15 @@ function openInbox(tab){
     }else{
       notifs.forEach(function(n){
         var from=users[n.from]||{name:'Непознат',emoji:'👤'};
-        var icon=n.type==='reply'?'💬':n.type==='mention'?'📢':n.preview==='wrench'?'🔧':n.preview==='thanks'?'🙏':'👍';
+        var icon=n.type==='reply'?'💬':n.type==='mention'?'📢':n.type==='intel'?'📡':n.preview==='wrench'?'🔧':n.preview==='thanks'?'🙏':'👍';
         var text='';
         if(n.type==='reply')text='<strong>'+escHtml(from.name)+'</strong> отговори на <strong>'+escHtml(n.postTitle||'')+'</strong>';
         else if(n.type==='reaction'){var emo=n.preview==='like'?'👍':n.preview==='wrench'?'🔧':'🙏';text='<strong>'+escHtml(from.name)+'</strong> реагира '+emo+' на <strong>'+escHtml(n.postTitle||'')+'</strong>'}
         else if(n.type==='mention')text='<strong>'+escHtml(from.name)+'</strong> те спомена в <strong>'+escHtml(n.postTitle||'')+'</strong>';
+        else if(n.type==='intel')text='Нова тема по твоите тагове: <strong>'+escHtml(n.postTitle||'')+'</strong>';
         html+='<div class="notif-item'+(n.read?'':' unread')+'" onclick="openForumThread(\''+n.postId+'\')">';
         html+='<div class="notif-row"><span class="notif-icon">'+icon+'</span><div class="notif-text">'+text+'</div></div>';
-        if(n.type==='reply'&&n.preview)html+='<div class="notif-preview">'+escHtml(n.preview)+'</div>';
+        if((n.type==='reply'||n.type==='intel')&&n.preview)html+='<div class="notif-preview">'+escHtml(n.preview)+'</div>';
         html+='<div class="notif-meta">'+timeAgo(n.date)+(n.time?' · '+n.time:'')+'</div>';
         html+='</div>';
       });
@@ -4242,7 +4328,18 @@ function openInbox(tab){
     }else{
       inbox.forEach(function(msg){
         var from=users[msg.from]||{name:'Непознат',emoji:'👤'};
-        html+='<div class="msg-item'+(msg.read?'':' msg-unread')+'"><div class="msg-item-h"><span>'+userAvatar(from,24)+' <strong class="link" onclick="event.stopPropagation();openProfile(\''+msg.from+'\')">'+escHtml(from.name)+'</strong></span><span class="meta time-ago" title="'+escHtml(msg.date)+'">'+timeAgo(msg.date)+(msg.time?' · '+msg.time:'')+'</span></div><div class="msg-item-body">'+escHtml(msg.body)+'</div></div>';
+        var isIntel=msg.type==='intel_respond';
+        var extraCls=isIntel?' msg-intel':'';
+        var bodyHtml='';
+        if(isIntel){
+          // Rich render for intel responses — parse lines for links
+          bodyHtml=escHtml(msg.body).replace(/🔗\s*(https?:\/\/\S+)/g,'🔗 <a href="$1" target="_blank" class="intel-link">$1</a>');
+          bodyHtml=bodyHtml.replace(/\n/g,'<br>');
+        }else{
+          bodyHtml=escHtml(msg.body);
+        }
+        var clickPost=isIntel&&msg.postId?' onclick="openForumThread(\''+msg.postId+'\')"':'';
+        html+='<div class="msg-item'+(msg.read?'':' msg-unread')+extraCls+'"><div class="msg-item-h"><span>'+userAvatar(from,24)+' <strong class="link" onclick="event.stopPropagation();openProfile(\''+msg.from+'\')">'+escHtml(from.name)+'</strong>'+(isIntel?' <span class="intel-msg-badge">'+(from.role==='mechanic'?'🔧 Майстор':'📦 Магазин')+'</span>':'')+'</span><span class="meta time-ago" title="'+escHtml(msg.date)+'">'+timeAgo(msg.date)+(msg.time?' · '+msg.time:'')+'</span></div><div class="msg-item-body"'+clickPost+'>'+bodyHtml+'</div></div>';
       });
     }
     inbox.forEach(function(m){m.read=true});saveMessages(user.id,inbox);
@@ -4268,6 +4365,198 @@ function seedMessages(){
       {id:'msg_seed2',from:'pesho',to:'marin',body:'Марин, ребилдът на вилката е готов за следващия сервиз. Маслото на горната камера трябва да се смени. Обади се за час.',date:'2026-03-04',time:'10:15',read:false}
     ]);
   }
+}
+
+// ===== BUSINESS INTEL =====
+function getAllTags(){
+  var tags={};
+  getForumPosts().forEach(function(p){
+    if(Array.isArray(p.tags))p.tags.forEach(function(t){tags[t.toLowerCase()]=t});
+  });
+  Object.keys(businessData).forEach(function(k){
+    businessData[k].tags.forEach(function(t){tags[t.toLowerCase()]=t});
+  });
+  return Object.keys(tags).map(function(k){return tags[k]});
+}
+function trackTagSearch(tag){
+  if(!tag)return;
+  var key=tag.toLowerCase();
+  try{var d=JSON.parse(localStorage.getItem('orTagSearch'))||{}}catch(e){var d={}}
+  d[key]=(d[key]||0)+1;
+  localStorage.setItem('orTagSearch',JSON.stringify(d));
+}
+function getTagSearchStats(){
+  try{return JSON.parse(localStorage.getItem('orTagSearch'))||{}}catch(e){return{}}
+}
+function notifySubscribedBusinesses(tags,postId,postTitle,authorId){
+  if(!tags||!tags.length)return;
+  var users=getUsers();
+  var tagsLower=tags.map(function(t){return t.toLowerCase()});
+  Object.keys(users).forEach(function(uid){
+    var u=users[uid];
+    if(u.role!=='business'&&u.role!=='mechanic')return;
+    if(uid===authorId)return;
+    var bp=getBizProfile(uid)||{};
+    var subs=bp.subscribedTags||[];
+    if(!subs.length)return;
+    var matched=subs.filter(function(s){return tagsLower.indexOf(s.toLowerCase())>-1});
+    if(matched.length){
+      addNotification(uid,{
+        id:'notif_intel_'+Date.now()+'_'+uid,
+        type:'intel',
+        from:authorId||'system',
+        postId:postId,
+        postTitle:(postTitle||'').substring(0,50),
+        preview:'Тагове: #'+matched.join(' #'),
+        date:new Date().toISOString().split('T')[0],
+        time:new Date().toLocaleTimeString('bg-BG',{hour:'2-digit',minute:'2-digit'}),
+        read:false
+      });
+    }
+  });
+}
+function renderBizIntel(userId){
+  var bp=getBizProfile(userId)||{};
+  var subs=bp.subscribedTags||[];
+  if(!subs.length)return '';
+  var posts=getForumPosts();
+  var searchStats=getTagSearchStats();
+  var now=new Date();var weekAgo=new Date(now);weekAgo.setDate(weekAgo.getDate()-7);
+  var weekStr=weekAgo.toISOString().split('T')[0];
+  // Tag activity — count posts per subscribed tag (last 7 days)
+  var tagActivity=[];
+  subs.forEach(function(tag){
+    var tl=tag.toLowerCase();
+    var count=0;var lastPost=null;
+    posts.forEach(function(p){
+      if(!Array.isArray(p.tags))return;
+      var match=p.tags.some(function(pt){return pt.toLowerCase()===tl});
+      if(match){
+        if(p.date>=weekStr)count++;
+        if(!lastPost||p.date>lastPost.date)lastPost=p;
+      }
+    });
+    tagActivity.push({tag:tag,count:count,lastPost:lastPost,searches:searchStats[tl]||0});
+  });
+  // Hot topics — posts matching subscribed tags, sorted by replies+reactions
+  var hotTopics=[];
+  var subsLower=subs.map(function(s){return s.toLowerCase()});
+  posts.forEach(function(p){
+    if(!Array.isArray(p.tags))return;
+    var match=p.tags.some(function(pt){return subsLower.indexOf(pt.toLowerCase())>-1});
+    if(!match)return;
+    var replyCount=Array.isArray(p.replies)?p.replies.length:0;
+    var rxCount=0;
+    if(p.reactions){Object.keys(p.reactions).forEach(function(k){rxCount+=(Array.isArray(p.reactions[k])?p.reactions[k].length:0)})}
+    hotTopics.push({post:p,score:replyCount*2+rxCount});
+  });
+  hotTopics.sort(function(a,b){return b.score-a.score});
+  hotTopics=hotTopics.slice(0,5);
+  // Render
+  var h='<div class="prof-sec intel-section"><div class="prof-sec-t">📡 INTEL DASHBOARD</div>';
+  // Subscribed tags with activity
+  h+='<div class="intel-tags-grid">';
+  tagActivity.forEach(function(ta){
+    h+='<div class="intel-tag">';
+    h+='<span class="hashtag">#'+escHtml(ta.tag)+'</span>';
+    if(ta.count)h+=' <span class="intel-badge">'+ta.count+' нови</span>';
+    if(ta.searches)h+=' <span class="intel-search-badge">🔍'+ta.searches+'</span>';
+    h+='</div>';
+  });
+  h+='</div>';
+  // Hot topics
+  if(hotTopics.length){
+    h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:10px 0 6px">🔥 ГОРЕЩИ ТЕМИ</div>';
+    var users=getUsers();
+    var myRole=(users[userId]||{}).role||'business';
+    var btnLabel=myRole==='mechanic'?'🔧 МОГА ДА ПОМОГНА':'📦 ИМАМЕ ГО!';
+    hotTopics.forEach(function(ht){
+      var p=ht.post;
+      var replyCount=Array.isArray(p.replies)?p.replies.length:0;
+      h+='<div class="intel-hot">';
+      h+='<div class="intel-hot-title" onclick="openForumThread(\''+p.id+'\')">'+escHtml(p.title)+'</div>';
+      h+='<div class="intel-hot-meta">💬'+replyCount+' · ';
+      if(Array.isArray(p.tags))h+=p.tags.map(function(t){return'#'+escHtml(t)}).join(' ');
+      h+=' · '+timeAgo(p.date)+'</div>';
+      h+='<button class="intel-respond-btn" onclick="event.stopPropagation();openIntelRespond(\''+p.id+'\',\''+escHtml(p.author)+'\',\''+escHtml((p.title||'').replace(/'/g,''))+'\')">'+btnLabel+'</button>';
+      h+='</div>';
+    });
+  }
+  // Search demand
+  var demandTags=tagActivity.filter(function(ta){return ta.searches>0}).sort(function(a,b){return b.searches-a.searches});
+  if(demandTags.length){
+    h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:10px 0 6px">📊 ТЪРСЕНЕ (DEMAND)</div>';
+    var maxS=demandTags[0].searches;
+    demandTags.forEach(function(dt){
+      var pct=Math.max(8,Math.round(dt.searches/maxS*100));
+      h+='<div class="intel-demand"><span class="intel-demand-tag">#'+escHtml(dt.tag)+'</span><div class="intel-demand-bar"><div class="intel-demand-fill" style="width:'+pct+'%"></div></div><span class="intel-demand-n">'+dt.searches+'</span></div>';
+    });
+  }
+  h+='</div>';
+  return h;
+}
+
+// ===== INTEL RESPOND (ИМАМЕ ГО / МОГА ДА ПОМОГНА) =====
+function openIntelRespond(postId,authorId,postTitle){
+  var user=getCurrentUser();if(!user)return;
+  var users=getUsers();
+  var author=users[authorId]||{name:'Непознат'};
+  var isMech=user.role==='mechanic';
+  var modal=document.getElementById('modalContent');
+  var html='<div class="mod-form-title">'+(isMech?'🔧 МОГА ДА ПОМОГНА':'📦 ИМАМЕ ГО!')+'</div>';
+  html+='<div style="font:400 12px \'Exo 2\',sans-serif;color:var(--text2);margin-bottom:10px">Относно: <strong>'+escHtml(postTitle)+'</strong><br>До: <strong>'+escHtml(author.name)+'</strong></div>';
+  if(!isMech){
+    // Business: link + note
+    html+='<div class="prof-edit-field"><label class="auth-label">Линк към продукта</label><input class="prof-edit-input" id="irLink" placeholder="https://myshop.bg/product/..."></div>';
+    html+='<div class="prof-edit-field"><label class="auth-label">Цена (по желание)</label><input class="prof-edit-input" id="irPrice" placeholder="120 лв, 85€..."></div>';
+    html+='<div class="prof-edit-field"><label class="auth-label">Бележка</label><input class="prof-edit-input" id="irNote" placeholder="На склад, доставка утре..."></div>';
+  }else{
+    // Mechanic: free text
+    html+='<div class="prof-edit-field"><label class="auth-label">Твоето съобщение</label><textarea class="prof-edit-input" id="irNote" rows="3" placeholder="Имам опит с тоя проблем. Диагностика 30-50лв, ела да го погледнем..."></textarea></div>';
+  }
+  html+='<button class="btn btn-o" style="margin-top:8px;width:100%" onclick="sendIntelRespond(\''+postId+'\',\''+authorId+'\',\''+escHtml(postTitle.replace(/'/g,''))+'\')">'+(isMech?'🔧 Изпрати':'📦 Изпрати')+'</button>';
+  modal.innerHTML=html;
+  document.getElementById('modalBg').classList.add('on');
+}
+function sendIntelRespond(postId,authorId,postTitle){
+  var user=getCurrentUser();if(!user)return;
+  var isMech=user.role==='mechanic';
+  var note=(document.getElementById('irNote')?document.getElementById('irNote').value:'').trim();
+  var link='',price='';
+  if(!isMech){
+    link=(document.getElementById('irLink')?document.getElementById('irLink').value:'').trim();
+    price=(document.getElementById('irPrice')?document.getElementById('irPrice').value:'').trim();
+    if(!link&&!note){showToast('Добави линк или бележка','');return}
+  }else{
+    if(!note){showToast('Напиши съобщение','');return}
+  }
+  // Build DM body
+  var body='';
+  if(isMech){
+    body='🔧 МОГА ДА ПОМОГНА\n📋 Относно: '+postTitle+'\n\n'+note;
+  }else{
+    body='📦 ИМАМЕ ГО!\n📋 Относно: '+postTitle;
+    if(link)body+='\n🔗 '+link;
+    if(price)body+='\n💰 '+price;
+    if(note)body+='\n💬 '+note;
+  }
+  // Send as DM
+  var msg={
+    id:'msg_intel_'+Date.now(),
+    from:user.id,
+    to:authorId,
+    body:body,
+    type:'intel_respond',
+    postId:postId,
+    date:new Date().toISOString().split('T')[0],
+    time:new Date().toLocaleTimeString('bg-BG',{hour:'2-digit',minute:'2-digit'}),
+    read:false
+  };
+  var inbox=getMessages(authorId);inbox.unshift(msg);saveMessages(authorId,inbox);
+  var sent=getMessages(user.id+'_sent');sent.unshift(msg);saveMessages(user.id+'_sent',sent);
+  closeModal();
+  showToast('✅ Изпратено на '+((getUsers()[authorId]||{}).name||'потребителя')+'!','success');
+  updateInboxBadge();
 }
 
 // ===== НОТИФИКАЦИИ =====
@@ -4309,6 +4598,23 @@ function seedNotifications(){
       {id:'notif_seed3',type:'mention',from:'kabakchiev',postId:'post_tpi',postTitle:'EXC 300 TPI — настройки на впръскването',preview:'@marin ти какъв филтър ползваш на...',date:'2026-03-08',time:'09:30',read:false}
     ]);
   }
+}
+function seedBizSubscriptions(){
+  // Seed tag subscriptions for demo business/mechanic users
+  var seeds={
+    pesho:['окачване','wp','showa','вибрация','сервиз'],
+    motohaus:['части','окачване','wp','масла','филтри'],
+    edimoto_shop:['ktm','нов мотор','дилър','exc','husqvarna'],
+    gosho:['гуми','окачване','вериги','спирачки'],
+    elilison:['ендуро','тренировка','техника','начинаещ']
+  };
+  Object.keys(seeds).forEach(function(uid){
+    var bp=getBizProfile(uid);
+    if(!bp)return;
+    if(bp.subscribedTags&&bp.subscribedTags.length)return;
+    bp.subscribedTags=seeds[uid];
+    saveBizProfile(uid,bp);
+  });
 }
 
 // ===== EVENT REGISTRATION =====
@@ -4700,6 +5006,7 @@ function initV10(){
   renderDynamicListings();
   seedMessages();
   seedNotifications();
+  seedBizSubscriptions();
   updateInboxBadge();
   updateStreak();
   checkEventRegistrations();
