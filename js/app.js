@@ -2713,6 +2713,41 @@ function renderProfActions(bp,userId){
   return h;
 }
 
+// ===== PROFILE COMPLETENESS CHECK =====
+function isProfileIncomplete(user,bp){
+  if(!user)return false;
+  // Core check: bio is the minimum requirement for all roles
+  if(!user.bio||!user.bio.trim())return true;
+  // Role-specific: check that key identity data exists
+  if(user.role==='business'){
+    if(!bp)return true;
+    if(!bp.location&&!bp.hours)return true;
+    return false;
+  }
+  if(user.role==='mechanic'){
+    if(!bp)return true;
+    if(!bp.specs||!bp.specs.length)return true;
+    return false;
+  }
+  if(user.role==='trainer'){
+    if(!user.experience||!user.levels)return true;
+    return false;
+  }
+  // rider: bio is enough (ridingType/experience are optional enrichment)
+  return false;
+}
+
+function renderProfileSetupBanner(role){
+  var roleName=role.label||'Потребител';
+  var h='<div class="prof-setup-banner">';
+  h+='<div class="prof-setup-icon">📋</div>';
+  h+='<div class="prof-setup-text">';
+  h+='<strong>Профилът ти е непопълнен</strong>';
+  h+='<span>Попълни данните си, за да те намерят другите ездачи. Отнема 2 минути.</span>';
+  h+='</div></div>';
+  return h;
+}
+
 // ===== DYNAMIC PROFILE =====
 function renderDynamicProfile(userId){
   var users=getUsers();var user=users[userId];if(!user)return null;
@@ -2722,6 +2757,16 @@ function renderDynamicProfile(userId){
 
   // Header: avatar, name, badges, stats
   var h=renderProfHeader(user,bp,role);
+
+  // Setup mode: empty profile → show edit form front and center
+  if(isMe&&isProfileIncomplete(user,bp)){
+    h+='<div class="prof-body">';
+    h+=renderProfileSetupBanner(role);
+    h+=renderProfileEditForm(user,bp,true);
+    h+='</div>';
+    h+=renderProfActions(bp,userId);
+    return h;
+  }
 
   // Body
   h+='<div class="prof-body">';
@@ -2767,37 +2812,7 @@ function renderDynamicProfile(userId){
 
   // Edit section for own profile
   if(isMe){
-    h+='<div class="prof-sec"><div class="prof-sec-t">✏️ РЕДАКТИРАЙ</div>';
-    // Section: Основни
-    h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin-bottom:6px">ОСНОВНИ</div>';
-    h+='<div class="prof-edit-field"><label class="auth-label">Име</label><input class="prof-edit-input" id="profEditName" value="'+escHtml(user.name)+'"></div>';
-    h+='<div class="prof-edit-field"><label class="auth-label">Био</label><textarea class="prof-edit-input prof-edit-textarea" id="profEditBio" maxlength="200" placeholder="Кажи нещо за себе си... (поддържа **bold** и *italic*)">'+escHtml(user.bio||'')+'</textarea></div>';
-    h+='<div class="prof-edit-field"><label class="auth-label">Град</label><input class="prof-edit-input" id="profEditCity" value="'+escHtml(user.city||'')+'"></div>';
-    h+='<div class="prof-edit-field"><label class="auth-label">Телефон</label><input class="prof-edit-input" id="profEditPhone" placeholder="088 123 4567" value="'+escHtml(user.phone||'')+'"></div>';
-    // Role-specific fields
-    if(user.role==='rider'){
-      h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:12px 0 6px;border-top:1px solid var(--border);padding-top:10px">ЕЗДАЧ</div>';
-      var _ridingTypes=[{v:'enduro',l:'Ендуро'},{v:'motocross',l:'Мотокрос'},{v:'trail',l:'Трейл'},{v:'rally',l:'Рали'},{v:'road',l:'Пътен'}];
-      h+='<div class="prof-edit-field"><label class="auth-label">Тип каране</label><select class="prof-edit-input" id="profEditRidingType"><option value="">— Избери —</option>';
-      _ridingTypes.forEach(function(rt){h+='<option value="'+rt.v+'"'+(user.ridingType===rt.v?' selected':'')+'>'+rt.l+'</option>'});
-      h+='</select></div>';
-      var _expOpts=[{v:'<1',l:'Под 1 година'},{v:'1-3',l:'1-3 години'},{v:'3-5',l:'3-5 години'},{v:'5-10',l:'5-10 години'},{v:'10+',l:'10+ години'}];
-      h+='<div class="prof-edit-field"><label class="auth-label">Опит (години)</label><select class="prof-edit-input" id="profEditExperience"><option value="">— Избери —</option>';
-      _expOpts.forEach(function(e){h+='<option value="'+e.v+'"'+(user.ridingExperience===e.v?' selected':'')+'>'+e.l+'</option>'});
-      h+='</select></div>';
-    }else if(user.role==='business'){
-      h+=renderBizEditFields(user,bp);
-    }else if(user.role==='mechanic'){
-      h+=renderMechEditFields(user,bp);
-    }else if(user.role==='trainer'){
-      h+=renderTrainerEditFields(user,bp);
-    }
-    // Section: Социални
-    h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:12px 0 6px;border-top:1px solid var(--border);padding-top:10px">СОЦИАЛНИ</div>';
-    h+='<div class="prof-edit-field"><label class="auth-label">Instagram</label><input class="prof-edit-input" id="profEditInsta" placeholder="@username" value="'+escHtml(user.instagram||'')+'"></div>';
-    h+='<div class="prof-edit-field"><label class="auth-label">Facebook</label><input class="prof-edit-input" id="profEditFb" placeholder="facebook.com/username" value="'+escHtml(user.facebook||'')+'"></div>';
-    h+='<button class="btn btn-o" style="margin-top:8px" onclick="saveProfileEdits()">Запази</button>';
-    h+='</div>';
+    h+=renderProfileEditForm(user,bp,false);
   }
   h+='</div>';
 
@@ -2809,6 +2824,45 @@ function renderDynamicProfile(userId){
 // ===== PROFILE EDIT HELPERS (business/mechanic/trainer) =====
 var SHOP_TYPES=[{v:'shop',l:'Магазин & Сервиз'},{v:'dealer',l:'Официален дилър'},{v:'parts',l:'Части'},{v:'gear',l:'Екипировка'},{v:'service',l:'Сервиз'}];
 var MECH_SPECS=['Окачване','WP','Showa','KYB','Двигател','Електрика','Горна част','Долна част','Спирачки','Гуми','Предавки','EFI','CDI','TPI','Рама','Пластмаси'];
+// ===== PROFILE EDIT FORM HELPER =====
+function renderProfileEditForm(user,bp,isSetup){
+  var title=isSetup?'✏️ ПОПЪЛНИ ПРОФИЛА СИ':'✏️ РЕДАКТИРАЙ';
+  var btnLabel=isSetup?'ЗАПАЗИ И ВИЖДАЙ ПРОФИЛА СИ':'Запази';
+  var btnStyle=isSetup?'margin-top:12px;width:100%;padding:12px;font-size:14px':'margin-top:8px';
+  var h='<div class="prof-sec"><div class="prof-sec-t">'+title+'</div>';
+  // Основни
+  h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin-bottom:6px">ОСНОВНИ</div>';
+  h+='<div class="prof-edit-field"><label class="auth-label">Име</label><input class="prof-edit-input" id="profEditName" value="'+escHtml(user.name)+'"></div>';
+  h+='<div class="prof-edit-field"><label class="auth-label">Био</label><textarea class="prof-edit-input prof-edit-textarea" id="profEditBio" maxlength="200" placeholder="Кажи нещо за себе си... (поддържа **bold** и *italic*)">'+escHtml(user.bio||'')+'</textarea></div>';
+  h+='<div class="prof-edit-field"><label class="auth-label">Град</label><input class="prof-edit-input" id="profEditCity" value="'+escHtml(user.city||'')+'"></div>';
+  h+='<div class="prof-edit-field"><label class="auth-label">Телефон</label><input class="prof-edit-input" id="profEditPhone" placeholder="088 123 4567" value="'+escHtml(user.phone||'')+'"></div>';
+  // Role-specific
+  if(user.role==='rider'){
+    h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:12px 0 6px;border-top:1px solid var(--border);padding-top:10px">ЕЗДАЧ</div>';
+    var _ridingTypes=[{v:'enduro',l:'Ендуро'},{v:'motocross',l:'Мотокрос'},{v:'trail',l:'Трейл'},{v:'rally',l:'Рали'},{v:'road',l:'Пътен'}];
+    h+='<div class="prof-edit-field"><label class="auth-label">Тип каране</label><select class="prof-edit-input" id="profEditRidingType"><option value="">— Избери —</option>';
+    _ridingTypes.forEach(function(rt){h+='<option value="'+rt.v+'"'+(user.ridingType===rt.v?' selected':'')+'>'+rt.l+'</option>'});
+    h+='</select></div>';
+    var _expOpts=[{v:'<1',l:'Под 1 година'},{v:'1-3',l:'1-3 години'},{v:'3-5',l:'3-5 години'},{v:'5-10',l:'5-10 години'},{v:'10+',l:'10+ години'}];
+    h+='<div class="prof-edit-field"><label class="auth-label">Опит (години)</label><select class="prof-edit-input" id="profEditExperience"><option value="">— Избери —</option>';
+    _expOpts.forEach(function(e){h+='<option value="'+e.v+'"'+(user.ridingExperience===e.v?' selected':'')+'>'+e.l+'</option>'});
+    h+='</select></div>';
+  }else if(user.role==='business'){
+    h+=renderBizEditFields(user,bp);
+  }else if(user.role==='mechanic'){
+    h+=renderMechEditFields(user,bp);
+  }else if(user.role==='trainer'){
+    h+=renderTrainerEditFields(user,bp);
+  }
+  // Социални
+  h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:12px 0 6px;border-top:1px solid var(--border);padding-top:10px">СОЦИАЛНИ</div>';
+  h+='<div class="prof-edit-field"><label class="auth-label">Instagram</label><input class="prof-edit-input" id="profEditInsta" placeholder="@username" value="'+escHtml(user.instagram||'')+'"></div>';
+  h+='<div class="prof-edit-field"><label class="auth-label">Facebook</label><input class="prof-edit-input" id="profEditFb" placeholder="facebook.com/username" value="'+escHtml(user.facebook||'')+'"></div>';
+  h+='<button class="btn btn-o" style="'+btnStyle+'" onclick="saveProfileEdits()">'+btnLabel+'</button>';
+  h+='</div>';
+  return h;
+}
+
 var TRAINER_LEVELS=[{v:'beginner',l:'Начинаещи'},{v:'intermediate',l:'Напреднали'},{v:'advanced',l:'Експерти'},{v:'pro',l:'Про'}];
 var _profSelectedSpecs=[];
 var _profPricingCount=0;
@@ -3045,7 +3099,15 @@ function saveProfileEdits(){
   var users=getUsers();users[user.id]=user;saveUsers(users);
   refreshAuthUI();showGreeting();
   showToast('✓ Профилът е обновен!','success');
-  closeModal();
+  // Re-render profile in modal to show updated data (works for both setup and normal edit)
+  var mc=document.getElementById('modalContent');
+  if(mc){
+    mc.innerHTML=renderDynamicProfile(user.id);
+    initShopTabs();
+    renderProfileOffers(user.id);
+    // Scroll to top of modal
+    var modal=mc.closest('.modal');if(modal)modal.scrollTop=0;
+  }
 }
 
 // ===== FORUM PERSISTENCE =====
