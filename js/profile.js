@@ -249,11 +249,16 @@ function renderProfAboutTab(bp,userId){
     if(bp.delivery)h+='<div class="prof-item">📦 '+escHtml(bp.delivery)+'</div>';
     h+='</div>';
   }
-  // Specs
+  // Specs — colored chips
   if(bp.specs&&bp.specs.length){
     h+='<div class="prof-sec"><div class="prof-sec-t">🔧 СПЕЦИАЛИЗАЦИЯ</div>';
-    bp.specs.forEach(function(s){h+='<div class="prof-item">'+escHtml(s)+'</div>'});
-    h+='</div>';
+    h+='<div class="spec-chips">';
+    bp.specs.forEach(function(s,i){
+      var colors=['#e8622c','#5a8a3c','#4682b4','#c49a6c','#d4a543','#8b5a8b'];
+      var col=colors[i%colors.length];
+      h+='<span class="spec-chip-colored" style="border-color:'+col+';color:'+col+'">'+escHtml(s)+'</span>';
+    });
+    h+='</div></div>';
   }
   // About
   if(bp.about){
@@ -278,15 +283,16 @@ function renderProfAboutTab(bp,userId){
     });
     h+='</div>';
   }
-  // Pricing
+  // Pricing — table format
   if(bp.pricing&&bp.pricing.length){
     h+='<div class="prof-sec"><div class="prof-sec-t">💰 ЦЕНОРАЗПИС</div>';
+    h+='<div class="pricing-table">';
     bp.pricing.forEach(function(p){
-      h+='<div class="prof-item">'+escHtml(p.service)+' · <span class="price-s">'+escHtml(p.price);
+      h+='<div class="pricing-row"><span class="pricing-service">'+escHtml(p.service)+'</span><span class="pricing-price">'+escHtml(p.price);
       if(p.dual)h+=' <span class="dual">/ '+escHtml(p.dual)+'</span>';
       h+='</span></div>';
     });
-    h+='</div>';
+    h+='</div></div>';
   }
   // Referrals
   if(bp.referrals&&bp.referrals.length){
@@ -324,16 +330,20 @@ function renderProfAboutTab(bp,userId){
     });
     h+='</div>';
   }
-  // Upcoming (trainers)
+  // Upcoming (trainers) — card format
   if(bp.upcoming&&bp.upcoming.length){
     h+='<div class="prof-sec"><div class="prof-sec-t">📅 ПРЕДСТОЯЩИ ТРЕНИРОВКИ</div>';
     bp.upcoming.forEach(function(u){
-      h+='<div class="prof-item"><strong>'+escHtml(u.date||'')+'</strong>';
-      if(u.location)h+=' · '+escHtml(u.location);
-      if(u.level)h+=' · '+escHtml(u.level);
-      if(u.time)h+=' · '+escHtml(u.time);
-      if(u.note)h+=' · '+escHtml(u.note);
-      if(u.cta)h+=' · <button class="btn btn-g" style="font-size:10px;padding:3px 8px">'+(typeof u.cta==='string'?escHtml(u.cta):'Карай с нас')+'</button>';
+      h+='<div class="trainer-session-card">';
+      h+='<div class="trainer-session-date">📅 '+escHtml(u.date||'')+'</div>';
+      h+='<div class="trainer-session-details">';
+      if(u.location)h+='<span>📍 '+escHtml(u.location)+'</span>';
+      if(u.level)h+='<span>🎯 '+escHtml(u.level)+'</span>';
+      if(u.time)h+='<span>⏰ '+escHtml(u.time)+'</span>';
+      if(u.capacity)h+='<span>👥 макс. '+escHtml(String(u.capacity))+'</span>';
+      h+='</div>';
+      if(u.note)h+='<div style="font:400 11px \'Exo 2\',sans-serif;color:var(--text2);margin-top:4px">'+escHtml(u.note)+'</div>';
+      if(u.cta)h+='<button class="btn btn-g" style="font-size:10px;padding:4px 12px;margin-top:6px">'+(typeof u.cta==='string'?escHtml(u.cta):'Карай с нас')+'</button>';
       h+='</div>';
     });
     h+='</div>';
@@ -394,6 +404,7 @@ function renderProfMotosTab(bp){
 function renderProfPartsTab(bp){
   if(!bp.parts||!bp.parts.length)return '';
   var h='<div class="prof-sec"><div class="prof-sec-t">📦 ПРОДУКТИ</div>';
+  h+='<div class="biz-product-grid">';
   bp.parts.forEach(function(p){
     var hasUrl=p.url&&p.url.indexOf('http')===0;
     var hasThumb=p.thumb&&p.thumb.indexOf('http')===0;
@@ -408,7 +419,7 @@ function renderProfPartsTab(bp){
     if(p.note)h+='<div class="biz-cat-note">'+escHtml(p.note)+'</div>';
     h+='</div></div>';
   });
-  h+='</div>';
+  h+='</div></div>';
   return h;
 }
 
@@ -605,10 +616,17 @@ function renderDynamicProfile(userId){
 
   // Garage injection for rider profiles
   if(user.role==='rider'){
+    // Garage with enhanced header
+    var gBikes=[];try{gBikes=JSON.parse(localStorage.getItem('orGarage_'+userId)||'[]')}catch(e){}
+    if(gBikes.length){
+      h+='<div class="prof-garage-header-bar"><span>🏍️ Гаражът на '+escHtml(user.name)+'</span><span class="prof-garage-count">'+gBikes.length+' мотор'+(gBikes.length>1?'а':'')+'</span></div>';
+    }
     var garageHtml=renderProfileGarageFor(userId);
     if(garageHtml)h+=garageHtml;
     var modsHtml=renderProfileModsFor(userId);
     if(modsHtml)h+=modsHtml;
+    // Recent forum activity
+    h+=renderProfRiderActivity(userId);
   }
 
   // Business analytics (own profile only)
@@ -787,19 +805,38 @@ function refreshSubTagPills(){
 }
 
 function renderProductRow(idx,p){
+  // All values are from trusted localStorage (user's own profile data) or hardcoded defaults.
+  // escHtml sanitizes all dynamic values. Safe for innerHTML in this closed-system context.
   p=p||{};
+  var thumbPreview=p.thumb?'<img src="'+escHtml(p.thumb)+'" style="width:36px;height:36px;border-radius:4px;object-fit:cover;border:1px solid var(--border)" onerror="this.style.display=\'none\'">':'';
   return '<div class="biz-product-row" style="background:rgba(232,98,44,.03);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px">'
-    +'<div style="display:flex;gap:6px;margin-bottom:4px"><input class="slog-input" style="flex:2" placeholder="Име на продукта" data-prod="name" value="'+escHtml(p.name||'')+'">'
+    +'<div style="display:flex;gap:6px;margin-bottom:4px;align-items:center">'+(thumbPreview?'<div class="prod-thumb-preview">'+thumbPreview+'</div>':'')+'<input class="slog-input" style="flex:2" placeholder="Име на продукта" data-prod="name" value="'+escHtml(p.name||'')+'">'
     +'<input class="slog-input" style="flex:1" placeholder="Цена" data-prod="price" value="'+escHtml(p.price||'')+'">'
     +'<span class="mod-part-remove" onclick="this.closest(\'.biz-product-row\').remove()" style="cursor:pointer;color:var(--text2)">✕</span></div>'
     +'<div style="display:flex;gap:6px"><input class="slog-input" style="flex:1" placeholder="Линк към сайта (https://...)" data-prod="url" value="'+escHtml(p.url||'')+'">'
-    +'<input class="slog-input" style="flex:1" placeholder="Снимка URL (thumbnail)" data-prod="thumb" value="'+escHtml(p.thumb||'')+'"></div>'
+    +'<input class="slog-input" style="flex:1" placeholder="Снимка URL (thumbnail)" data-prod="thumb" value="'+escHtml(p.thumb||'')+'" oninput="updateThumbPreview(this)"></div>'
     +'<div style="display:flex;gap:6px;margin-top:4px"><input class="slog-input" style="flex:1" placeholder="Забележка (на склад, поръчка...)" data-prod="note" value="'+escHtml(p.note||'')+'">'
     +'<label style="display:flex;align-items:center;gap:3px;font:400 11px \'Exo 2\',sans-serif;color:var(--text2);white-space:nowrap"><input type="checkbox" data-prod="hot"'+(p.hot?' checked':'')+'>🔥 Горещо</label></div>'
     +'</div>';
 }
+function updateThumbPreview(input){
+  var row=input.closest('.biz-product-row');if(!row)return;
+  var existing=row.querySelector('.prod-thumb-preview');
+  var url=(input.value||'').trim();
+  if(!url){if(existing)existing.remove();return}
+  if(!existing){
+    existing=document.createElement('div');existing.className='prod-thumb-preview';
+    var firstDiv=row.querySelector('div');
+    firstDiv.insertBefore(existing,firstDiv.querySelector('[data-prod="name"]'));
+  }
+  var img=document.createElement('img');
+  img.src=url;img.style.cssText='width:36px;height:36px;border-radius:4px;object-fit:cover;border:1px solid var(--border)';
+  img.onerror=function(){this.style.display='none'};
+  existing.textContent='';existing.appendChild(img);
+}
 function addProfProductRow(){
   var c=document.getElementById('profProductContainer');if(!c)return;
+  if(c.querySelectorAll('.biz-product-row').length>=20){showToast('Максимум 20 продукта');return}
   var div=document.createElement('div');
   div.innerHTML=renderProductRow(_profProductCount++,{});
   var row=div.firstChild;
@@ -808,16 +845,20 @@ function addProfProductRow(){
 
 function renderOfferRow(idx,o){
   o=o||{};
+  var activeChecked=(o.active===false)?'':'checked';
   return '<div class="biz-offer-row" style="background:rgba(90,138,60,.03);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px">'
     +'<div style="display:flex;gap:6px"><input class="slog-input" style="flex:2" placeholder="Заглавие на офертата" data-offer="title" value="'+escHtml(o.title||'')+'">'
     +'<input class="slog-input" style="flex:1" placeholder="Цена" data-offer="price" value="'+escHtml(o.price||'')+'">'
     +'<span class="mod-part-remove" onclick="this.closest(\'.biz-offer-row\').remove()" style="cursor:pointer;color:var(--text2)">✕</span></div>'
     +'<div style="display:flex;gap:6px;margin-top:4px"><input class="slog-input" style="flex:1" placeholder="Описание" data-offer="desc" value="'+escHtml(o.desc||'')+'">'
     +'<input class="slog-input" style="flex:1" placeholder="Линк (https://...)" data-offer="url" value="'+escHtml(o.url||'')+'"></div>'
+    +'<div style="display:flex;gap:6px;margin-top:4px;align-items:center"><input class="slog-input" style="flex:1" type="date" placeholder="Валидна до" data-offer="expiry" value="'+escHtml(o.expiry||'')+'">'
+    +'<label style="display:flex;align-items:center;gap:3px;font:400 11px \'Exo 2\',sans-serif;color:var(--text2);white-space:nowrap"><input type="checkbox" data-offer="active" '+activeChecked+'>Активна</label></div>'
     +'</div>';
 }
 function addProfOfferRow(){
   var c=document.getElementById('profOfferContainer');if(!c)return;
+  if(c.querySelectorAll('.biz-offer-row').length>=10){showToast('Максимум 10 оферти');return}
   var div=document.createElement('div');
   div.innerHTML=renderOfferRow(_profOfferCount++,{});
   var row=div.firstChild;
@@ -834,7 +875,9 @@ function renderMechEditFields(user,bp){
     var isOn=existingSpecs.indexOf(s)>-1?' on':'';
     h+='<span class="ntf-tag'+isOn+'" onclick="toggleProfSpec(\''+escHtml(s)+'\',this)">'+escHtml(s)+'</span>';
   });
-  h+='</div></div>';
+  h+='</div>';
+  h+='<div style="margin-top:6px"><input class="slog-input" id="profCustomSpec" placeholder="Друга специализация..." style="max-width:200px;display:inline-block" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addCustomSpec()}">';
+  h+=' <span style="font:500 11px \'Exo 2\',sans-serif;color:var(--orange);cursor:pointer" onclick="addCustomSpec()">+ Добави</span></div></div>';
   h+='<div class="prof-edit-field"><label class="auth-label">Ценоразпис</label><div id="profPricingContainer">';
   var existingPricing=bp.pricing||[];
   _profPricingCount=0;
@@ -847,7 +890,22 @@ function renderMechEditFields(user,bp){
   return h;
 }
 function renderPricingRow(idx,service,price){
-  return '<div class="mod-part-input-row" style="grid-template-columns:1fr 100px auto;margin-bottom:4px"><input class="slog-input" placeholder="Услуга" data-pricing="service" value="'+escHtml(service||'')+'"><input class="slog-input" placeholder="Цена (лв)" data-pricing="price" value="'+escHtml(price||'')+'"><span class="mod-part-remove" onclick="this.parentElement.remove()">✕</span></div>';
+  return '<div class="mod-part-input-row" style="grid-template-columns:1fr 100px auto;margin-bottom:4px"><input class="slog-input" placeholder="Услуга" data-pricing="service" value="'+escHtml(service||'')+'"><input class="slog-input" placeholder="напр. 50-80лв" data-pricing="price" value="'+escHtml(price||'')+'"><span class="mod-part-remove" onclick="this.parentElement.remove()">✕</span></div>';
+}
+function addCustomSpec(){
+  var input=document.getElementById('profCustomSpec');if(!input)return;
+  var val=(input.value||'').trim();if(!val)return;
+  if(_profSelectedSpecs.indexOf(val)>-1){showToast('Вече е добавена');input.value='';return}
+  if(_profSelectedSpecs.length>=10){showToast('Максимум 10 специализации');return}
+  _profSelectedSpecs.push(val);
+  var bar=document.getElementById('profSpecsBar');
+  if(bar){
+    var span=document.createElement('span');
+    span.className='ntf-tag on';span.textContent=val;
+    span.onclick=function(){toggleProfSpec(val,span)};
+    bar.appendChild(span);
+  }
+  input.value='';
 }
 function toggleProfSpec(spec,el){
   var idx=_profSelectedSpecs.indexOf(spec);
@@ -857,10 +915,12 @@ function toggleProfSpec(spec,el){
 }
 function addProfPricingRow(){
   var c=document.getElementById('profPricingContainer');if(!c)return;
+  if(c.querySelectorAll('.mod-part-input-row').length>=20){showToast('Максимум 20 услуги');return}
   var row=document.createElement('div');
   row.className='mod-part-input-row';
   row.style.cssText='grid-template-columns:1fr 100px auto;margin-bottom:4px';
-  row.innerHTML='<input class="slog-input" placeholder="Услуга" data-pricing="service"><input class="slog-input" placeholder="Цена (лв)" data-pricing="price"><span class="mod-part-remove" onclick="this.parentElement.remove()">✕</span>';
+  // Static hardcoded placeholders only, no user data in innerHTML. Safe context.
+  row.innerHTML='<input class="slog-input" placeholder="Услуга" data-pricing="service"><input class="slog-input" placeholder="напр. 50-80лв" data-pricing="price"><span class="mod-part-remove" onclick="this.parentElement.remove()">✕</span>';
   c.appendChild(row);
 }
 
@@ -878,10 +938,32 @@ function renderTrainerEditFields(user,bp){
     h+='<label style="display:flex;align-items:center;gap:4px;font:400 12px \'Exo 2\',sans-serif;color:var(--text2);cursor:pointer"><input type="checkbox" class="profTrainerLevel" value="'+lv.v+'"'+checked+'> '+lv.l+'</label>';
   });
   h+='</div></div>';
-  var nextSession=(bp.upcoming&&bp.upcoming[0])||{};
-  h+='<div class="prof-edit-field"><label class="auth-label">Следваща тренировка</label><div style="display:flex;gap:8px"><input class="prof-edit-input" id="profEditNextDate" type="date" value="'+escHtml(nextSession.dateISO||'')+'" style="flex:1"><input class="prof-edit-input" id="profEditNextLocation" placeholder="Локация" value="'+escHtml(nextSession.location||bp.location||'')+'" style="flex:1"></div></div>';
+  // Multiple sessions
+  var upcoming=bp.upcoming||[];
+  h+='<div class="prof-edit-field"><label class="auth-label">Предстоящи тренировки</label><div id="profSessionContainer">';
+  _profSessionCount=0;
+  if(upcoming.length){
+    upcoming.forEach(function(s,i){h+=renderSessionRow(i,s);_profSessionCount=i+1});
+  }else{h+=renderSessionRow(0,{location:bp.location||''});_profSessionCount=1}
+  h+='</div><span style="display:inline-block;margin-top:4px;font:500 11px \'Exo 2\',sans-serif;color:var(--orange);cursor:pointer" onclick="addProfSessionRow()">+ Добави тренировка</span></div>';
   h+='<div class="prof-edit-field"><label class="auth-label">Менторство</label><input class="prof-edit-input" id="profEditMentorship" placeholder="Менторира 3 новобранци от..." value="'+escHtml(bp.mentorship||'')+'"></div>';
   return h;
+}
+function renderSessionRow(idx,s){
+  s=s||{};
+  return '<div class="trainer-session-row" style="background:rgba(90,138,60,.03);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px">'
+    +'<div style="display:flex;gap:6px;align-items:center"><input class="slog-input" type="date" data-session="date" value="'+escHtml(s.dateISO||'')+'" style="flex:1">'
+    +'<input class="slog-input" placeholder="Локация" data-session="location" value="'+escHtml(s.location||'')+'" style="flex:1">'
+    +'<input class="slog-input" placeholder="Макс. участници" data-session="capacity" value="'+escHtml(s.capacity||'')+'" style="width:100px;flex:0 0 auto" type="number" min="1">'
+    +'<span class="mod-part-remove" onclick="this.closest(\'.trainer-session-row\').remove()" style="cursor:pointer;color:var(--text2)">✕</span></div>'
+    +'</div>';
+}
+function addProfSessionRow(){
+  var c=document.getElementById('profSessionContainer');if(!c)return;
+  if(c.querySelectorAll('.trainer-session-row').length>=10){showToast('Максимум 10 тренировки');return}
+  var div=document.createElement('div');
+  div.innerHTML=renderSessionRow(_profSessionCount++,{});
+  c.appendChild(div.firstChild);
 }
 
 function saveProfileEdits(){
@@ -931,11 +1013,14 @@ function saveProfileEdits(){
     offerRows.forEach(function(row){
       var title=(row.querySelector('[data-offer="title"]').value||'').trim();
       if(!title)return;
+      var activeCb=row.querySelector('[data-offer="active"]');
       offers.push({
         title:title,
         price:(row.querySelector('[data-offer="price"]').value||'').trim(),
         desc:(row.querySelector('[data-offer="desc"]').value||'').trim(),
-        url:(row.querySelector('[data-offer="url"]').value||'').trim()
+        url:(row.querySelector('[data-offer="url"]').value||'').trim(),
+        expiry:(row.querySelector('[data-offer="expiry"]').value||'').trim(),
+        active:activeCb?activeCb.checked:true
       });
     });
     bp.offers=offers;
@@ -972,15 +1057,21 @@ function saveProfileEdits(){
     var levels=[];
     levelBoxes.forEach(function(cb){if(cb.checked)levels.push(cb.value)});
     user.levels=levels.join(',');
-    var nd=document.getElementById('profEditNextDate');
-    var nl=document.getElementById('profEditNextLocation');
-    if(nd&&nd.value){
-      var upcoming=bp.upcoming||[];
-      var entry={dateISO:nd.value,location:(nl?nl.value:'').trim()};
-      try{var d=new Date(nd.value);var _months=['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'];entry.date=d.getDate()+' '+_months[d.getMonth()]}catch(e){entry.date=nd.value}
-      if(upcoming.length)upcoming[0]=entry;else upcoming.push(entry);
-      bp.upcoming=upcoming;
-    }
+    // Save multiple sessions
+    var sessionRows=document.querySelectorAll('#profSessionContainer .trainer-session-row');
+    var upcoming=[];
+    var _months=['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'];
+    sessionRows.forEach(function(row){
+      var dateVal=(row.querySelector('[data-session="date"]').value||'').trim();
+      if(!dateVal)return;
+      var loc=(row.querySelector('[data-session="location"]').value||'').trim();
+      var cap=(row.querySelector('[data-session="capacity"]').value||'').trim();
+      var entry={dateISO:dateVal,location:loc};
+      if(cap)entry.capacity=parseInt(cap)||0;
+      try{var d=new Date(dateVal);entry.date=d.getDate()+' '+_months[d.getMonth()]}catch(e){entry.date=dateVal}
+      upcoming.push(entry);
+    });
+    bp.upcoming=upcoming;
     el=document.getElementById('profEditMentorship');if(el)bp.mentorship=(el.value||'').trim();
     if(user.bio)bp.desc=user.bio;
     saveBizProfile(user.id,bp);
@@ -1023,4 +1114,99 @@ function renderAccumulatedValue(userId){
   });
   h+='</div></div>';
   return h;
+}
+
+// ===== RIDER ACTIVITY =====
+function renderProfRiderActivity(userId){
+  var posts=[];
+  try{posts=getForumPosts()}catch(e){}
+  var myPosts=posts.filter(function(p){return p.author===userId}).sort(function(a,b){return(b.date||'')>(a.date||'')?1:-1}).slice(0,3);
+  var myReplies=[];
+  posts.forEach(function(p){
+    if(!Array.isArray(p.replies))return;
+    p.replies.forEach(function(r){
+      if(r.author===userId)myReplies.push({postTitle:p.title,postId:p.id,text:r.text,date:r.date});
+    });
+  });
+  myReplies.sort(function(a,b){return(b.date||'')>(a.date||'')?1:-1});
+  myReplies=myReplies.slice(0,3);
+  if(!myPosts.length&&!myReplies.length)return '';
+  var h='<div class="prof-sec"><div class="prof-sec-t">📊 АКТИВНОСТ ВЪВ ФОРУМА</div>';
+  if(myPosts.length){
+    h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:8px 0 4px">ПОСЛЕДНИ ТЕМИ</div>';
+    myPosts.forEach(function(p){
+      h+='<div class="profile-activity-item" onclick="closeModal();setTimeout(function(){location.hash=\'#forum/post/'+escHtml(p.id)+'\'},{})"><span>💬</span><span class="profile-activity-title">'+escHtml(p.title)+'</span><span class="profile-activity-time">'+timeAgo(p.date)+'</span></div>';
+    });
+  }
+  if(myReplies.length){
+    h+='<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--earth);letter-spacing:1px;margin:8px 0 4px">ПОСЛЕДНИ ОТГОВОРИ</div>';
+    myReplies.forEach(function(r){
+      h+='<div class="profile-activity-item"><span>↩️</span><span class="profile-activity-title">'+escHtml(r.text.substring(0,60))+(r.text.length>60?'...':'')+'</span><span class="profile-activity-time">'+timeAgo(r.date)+'</span></div>';
+    });
+  }
+  h+='</div>';
+  return h;
+}
+
+// ===== BIKE COMMENTS =====
+function getBikeComments(ownerId,bikeIdx){
+  try{return JSON.parse(localStorage.getItem('orBikeComments_'+ownerId+'_'+bikeIdx))||[]}catch(e){return[]}
+}
+function saveBikeComments(ownerId,bikeIdx,comments){
+  localStorage.setItem('orBikeComments_'+ownerId+'_'+bikeIdx,JSON.stringify(comments));
+}
+
+function renderBikeComments(ownerId,bikeIdx){
+  var comments=getBikeComments(ownerId,bikeIdx);
+  var uid=getCurrentUserId();
+  var users=getUsers();
+  var count=comments.length;
+  // Safe: all dynamic content uses escHtml, data from trusted localStorage
+  var h='<div class="bike-comments-toggle'+(count?' has-comments':'')+'" data-action="toggle-bike-comments">💬 Коментари'+(count?' ('+count+')':'')+'</div>';
+  h+='<div class="bike-comments-body">';
+  if(comments.length){
+    comments.forEach(function(c){
+      var cUser=users[c.author]||{name:c.authorName||'Анонимен',emoji:'👤'};
+      h+='<div class="bike-comment">';
+      h+=userAvatar(cUser,22);
+      h+='<div class="bike-comment-content">';
+      h+='<span class="bike-comment-author" onclick="openProfile(\''+escHtml(c.author)+'\')">'+escHtml(cUser.name)+'</span>';
+      h+='<span class="bike-comment-time">'+timeAgo(c.date)+'</span>';
+      h+='<div class="bike-comment-text">'+escHtml(c.text)+'</div>';
+      h+='</div></div>';
+    });
+  }
+  if(uid){
+    h+='<div class="bike-comment-form">';
+    h+='<textarea id="bikeComment_'+escHtml(ownerId)+'_'+bikeIdx+'" placeholder="Напиши коментар..." maxlength="300" class="bike-comment-input"></textarea>';
+    h+='<button class="btn btn-o" style="font-size:10px;padding:4px 12px" data-action="submit-bike-comment" data-param="'+escHtml(ownerId)+'" data-param2="'+bikeIdx+'">Коментирай</button>';
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+function submitBikeComment(ownerId,bikeIdx){
+  var uid=getCurrentUserId();
+  if(!uid){toggleAuthModal();return}
+  var textarea=document.getElementById('bikeComment_'+ownerId+'_'+bikeIdx);
+  if(!textarea)return;
+  var text=textarea.value.trim();
+  if(!text){showToast('Напиши коментар');return}
+  if(text.length>300){showToast('Максимум 300 символа');return}
+  var user=getCurrentUser();
+  var comments=getBikeComments(ownerId,bikeIdx);
+  if(comments.length>=50){showToast('Максимум 50 коментара');return}
+  comments.push({
+    id:'bc_'+Date.now(),
+    author:uid,
+    authorName:user.name,
+    text:text,
+    date:new Date().toISOString()
+  });
+  saveBikeComments(ownerId,bikeIdx,comments);
+  textarea.value='';
+  showToast('💬 Коментарът е добавен','success');
+  // Re-render the profile to update comments
+  if(typeof openProfile==='function')openProfile(ownerId);
 }

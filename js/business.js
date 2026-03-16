@@ -206,12 +206,19 @@ function renderProfileOffers(profileKey){
   if(!offers)return;
   var container=document.getElementById('pt-offers');
   if(!container)return;
+  var today=new Date().toISOString().split('T')[0];
+  // Safe: all dynamic values are from trusted localStorage + seed data, escaped with escHtml
   container.innerHTML=offers.map(function(o){
     var hasUrl=o.url&&o.url.indexOf('http')===0;
-    return '<div class="prof-item" style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    var isExpired=o.expiry&&o.expiry<today;
+    var isInactive=o.active===false;
+    var cls=isExpired||isInactive?'offer-expired':'';
+    return '<div class="prof-item '+cls+'" style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">'
       +'<strong>'+(hasUrl?'<a href="'+escHtml(o.url)+'" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">'+escHtml(o.title)+' ↗</a>':escHtml(o.title))+'</strong>'
       +'<span class="price-s">'+escHtml(o.price)+'</span></div>'
+      +(isExpired?'<div style="font:500 9px \'JetBrains Mono\',monospace;color:#e85454;margin-top:2px">ИЗТЕКЛА</div>':'')
+      +(isInactive?'<div style="font:500 9px \'JetBrains Mono\',monospace;color:var(--text2);margin-top:2px">НЕАКТИВНА</div>':'')
       +'<div class="meta" style="margin-top:4px">'+escHtml(o.desc)+'</div></div>';
   }).join('');
 }

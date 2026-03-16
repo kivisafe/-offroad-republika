@@ -132,3 +132,48 @@ function renderMarkdown(text) {
 // ===== REPORT SYSTEM (data layer) =====
 function getReports() { try { return JSON.parse(localStorage.getItem('orReports') || '[]'); } catch (e) { return []; } }
 function saveReports(r) { localStorage.setItem('orReports', JSON.stringify(r)); }
+
+// ===== CENTRAL CLICK DELEGATOR =====
+// Replaces inline onclick handlers. Elements use data-action + data-param + data-param2.
+document.addEventListener('click', function(e) {
+  var t = e.target.closest('[data-action]');
+  if (!t) return;
+  var action = t.dataset.action;
+  var param = t.dataset.param || '';
+  var param2 = t.dataset.param2 || '';
+  // Stop propagation for nested clickables (replaces inline event.stopPropagation())
+  e.stopPropagation();
+  // Route actions
+  if (action === 'go') go(param);
+  else if (action === 'profile') openProfile(param);
+  else if (action === 'zone') { enterZone(param); go('forum'); }
+  else if (action === 'entry-go') entryGo(param, param2);
+  else if (action === 'join-event') joinEvent(param, t);
+  else if (action === 'toggle-moto') toggleMoto(t.closest('.mc'));
+  else if (action === 'toggle-story') toggleStory(t.closest('.fc'));
+  else if (action === 'toggle-event') toggleEvent(t.closest('.ev'));
+  else if (action === 'toggle-garage') toggleGarage();
+  else if (action === 'toggle-chat') toggleChat();
+  else if (action === 'toggle-auth') toggleAuthModal();
+  else if (action === 'close-modal') closeModal();
+  else if (action === 'report') reportPost(t);
+  else if (action === 'toast') showToast(param);
+  else if (action === 'toggle-mobile-nav') toggleMobileNav();
+  else if (action === 'show-entry') showEntry();
+  else if (action === 'hide') { var el = document.getElementById(param); if (el) el.style.display = 'none'; }
+  else if (action === 'show-listing-form') showListingForm();
+  else if (action === 'show-topic-form') showNewTopicForm();
+  else if (action === 'send-chat') sendChat();
+  else if (action === 'close-auth-modal') closeAuthModal();
+  else if (action === 'open-inbox') openInbox();
+  else if (action === 'forum-home') forumHome();
+  else if (action === 'dna-home') dnaHome();
+  else if (action === 'dna-from-garage') dnaFromGarage();
+  else if (action === 'new-topic') handleNewTopic();
+  else if (action === 'toggle-open') t.classList.toggle('open');
+  else if (action === 'garage-status') setGarageStatus(param);
+  else if (action === 'add-bike') addBike();
+  else if (action === 'sell-bike') sellBike(parseInt(param));
+  else if (action === 'submit-bike-comment') submitBikeComment(param, parseInt(param2));
+  else if (action === 'toggle-bike-comments') { var bc=t.nextElementSibling; if(bc)bc.classList.toggle('open'); t.classList.toggle('open'); }
+});

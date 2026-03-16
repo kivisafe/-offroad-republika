@@ -179,7 +179,49 @@ function renderHomeCta(){
   var el=document.getElementById('homeCta');if(!el)return;
   el.style.display=getCurrentUser()?'none':'';
 }
-function refreshHome(){renderFeed();renderHomeStats();renderHomeLatestTopics();renderHomeNewListings();renderHomeCta();showFreshnessBanner()}
+function refreshHome(){renderRegChecklist();renderFeed();renderHomeStats();renderHomeLatestTopics();renderHomeNewListings();renderHomeCta();showFreshnessBanner()}
+
+// ===== REGISTRATION CHECKLIST =====
+// Note: All data is from trusted localStorage (user's own data), no external input.
+// Labels are hardcoded strings, not user-supplied. Safe for innerHTML in this context.
+function renderRegChecklist(){
+  var el=document.getElementById('regChecklist');if(!el)return;
+  var uid=getCurrentUserId();
+  if(!uid){el.innerHTML='';return}
+  var clKey='orRegChecklist_'+uid;
+  var clData;try{clData=JSON.parse(localStorage.getItem(clKey)||'{}')}catch(e){clData={}}
+  if(clData.dismissed){el.innerHTML='';return}
+  var user=getCurrentUser();if(!user)return;
+  var bp=null;try{bp=JSON.parse(localStorage.getItem('orBizProfile_'+uid))}catch(e){}
+  var garage=getGarage();
+  var myPosts=getForumPosts().filter(function(p){return p.author===uid});
+  var regs=JSON.parse(localStorage.getItem('orEventRegs')||'{}');
+  var hasEvent=false;
+  Object.keys(regs).forEach(function(k){if(Array.isArray(regs[k])&&regs[k].indexOf(uid)>-1)hasEvent=true});
+  var dirVisited=!!localStorage.getItem('orDirVisited_'+uid);
+  var items=[
+    {done:garage.length>0,label:'Добави мотор в гаража',emoji:'🏍️',action:"go('garage')"},
+    {done:!isProfileIncomplete(user,bp),label:'Попълни профила си',emoji:'📝',action:"openProfile('"+escHtml(uid)+"')"},
+    {done:myPosts.length>0,label:'Създай първата си тема',emoji:'💬',action:"go('forum')"},
+    {done:dirVisited,label:'Разгледай Директорията',emoji:'📋',action:"go('dir')"},
+    {done:hasEvent,label:'Присъедини се към събитие',emoji:'🏁',action:"go('events')"}
+  ];
+  var doneCount=items.filter(function(i){return i.done}).length;
+  if(doneCount===items.length){el.innerHTML='';return}
+  var pct=Math.round(doneCount/items.length*100);
+  var html='<div class="reg-checklist card-enter"><div class="reg-checklist-header"><div class="reg-checklist-title">ПЪРВИ СТЪПКИ ('+doneCount+'/'+items.length+')</div><span class="reg-checklist-dismiss" onclick="dismissRegChecklist()">Скрий</span></div>';
+  html+='<div class="reg-check-progress"><div class="reg-check-bar" style="width:'+pct+'%"></div></div>';
+  items.forEach(function(item){
+    html+='<div class="reg-check-item'+(item.done?' done':'')+'"'+(item.done?'':' onclick="'+item.action+'"')+'><div class="reg-check-icon">'+(item.done?'✓':item.emoji)+'</div><div class="reg-check-label">'+item.label+'</div>'+(item.done?'':'<span class="reg-check-go">→</span>')+'</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+function dismissRegChecklist(){
+  var uid=getCurrentUserId();if(!uid)return;
+  localStorage.setItem('orRegChecklist_'+uid,JSON.stringify({dismissed:true}));
+  var el=document.getElementById('regChecklist');if(el)el.innerHTML='';
+}
 
 // ===== ACTIVITY INDICATORS =====
 function simulateReaders(){

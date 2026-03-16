@@ -48,6 +48,8 @@ function go(t){
   document.getElementById('nav').style.display='';
   document.getElementById('entryBox').style.display='none';
   if(t==='forum') forumHome();
+  // Track directory visit for registration checklist
+  if(t==='dir'){var _uid=getCurrentUserId();if(_uid)localStorage.setItem('orDirVisited_'+_uid,'1')}
   // Close mobile nav if open
   var nav=document.getElementById('nav');if(nav)nav.classList.remove('mobile-show');
   var hb=document.getElementById('hamburger');if(hb)hb.classList.remove('open');

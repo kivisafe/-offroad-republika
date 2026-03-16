@@ -62,7 +62,8 @@ function renderGarage(){
       '<span class="'+logBtnClass+'" onclick="event.stopPropagation();toggleServiceBook('+i+')">\uD83D\uDCD6 \u041A\u043D\u0438\u0436\u043A\u0430'+(logCount?' ('+logCount+')':'')+'</span>'+
       '<span class="'+modBtnClass+'" onclick="event.stopPropagation();toggleModMap('+i+')">\uD83D\uDD27 \u041C\u043E\u0434\u043E\u0432\u0435'+(modCount?' ('+modCount+')':'')+'</span>'+
       '<span class="garage-bike-btn" onclick="event.stopPropagation();toggleModForm('+i+')">+ \u041C\u043E\u0434</span>'+
-      '<span class="garage-bike-btn" onclick="event.stopPropagation();toggleAddRecord('+i+')">+ \u0417\u0430\u043F\u0438\u0441</span></div>';
+      '<span class="garage-bike-btn" onclick="event.stopPropagation();toggleAddRecord('+i+')">+ \u0417\u0430\u043F\u0438\u0441</span>'+
+      '<span class="garage-bike-btn garage-sell-btn" data-action="sell-bike" data-param="'+i+'">🏷️ Продай</span></div>';
     var expandHtml='';
     if(_openServiceBook===i){expandHtml='<div class="slog-timeline">'+renderServiceTimeline(i)+'</div>';}
     if(_openAddForm===i){expandHtml+=renderAddRecordForm(i);}
@@ -695,6 +696,8 @@ function renderProfileGarageFor(userId){
       }
       var bikeMods=mods.filter(function(m){return m.bikeIdx===idx});
       if(bikeMods.length){c+=renderModMap(idx,true)}
+      // Bike comments section
+      if(typeof renderBikeComments==='function')c+=renderBikeComments(userId,idx);
       return c+'</div>';
     }
     var archKey=userId===getCurrentUserId()?localStorage.getItem('orArchetype'):null;
