@@ -30,6 +30,9 @@ function initV10(){
   seedBizSubscriptions();
   updateInboxBadge();
   updateStreak();
+  // Streak reminder toast
+  var _uid=getCurrentUserId();
+  if(_uid){var _s=getStreak(_uid);if(_s&&_s.current>1)setTimeout(function(){showToast(_s.current+' дни поред! Не спирай.','success')},1500);}
   checkEventRegistrations();
   refreshHome();
   // Handle initial hash on page load

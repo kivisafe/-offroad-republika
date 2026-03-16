@@ -98,7 +98,8 @@ function renderFeed(){
       if(item.author){
         authorHtml=userAvatar(author,18)+' <strong class="link" onclick="event.stopPropagation();openProfile(\''+item.author+'\')">'+escHtml(author.name)+'</strong> · ';
       }
-      var card='<div class="feed-card card-enter" data-enter-delay="'+idx+'" onclick="'+onclick+'"><div class="feed-card-badge" style="background:'+ft.color+'22;color:'+ft.color+'">'+ft.emoji+' '+ft.label+'</div>'+extraBadge+'<div class="feed-card-title">'+escHtml(item.title)+'</div><div class="feed-card-meta">'+authorHtml+meta+' · <span class="time-ago">'+timeAgo(item.date)+'</span></div></div>';
+      var freshTag='';if(item.date&&(new Date()-new Date(item.date))<7200000)freshTag='<span class="fresh-badge">нов</span>';
+      var card='<div class="feed-card card-enter" data-enter-delay="'+idx+'" onclick="'+onclick+'"><div class="feed-card-badge" style="background:'+ft.color+'22;color:'+ft.color+'">'+ft.emoji+' '+ft.label+'</div>'+extraBadge+freshTag+'<div class="feed-card-title">'+escHtml(item.title)+'</div><div class="feed-card-meta">'+authorHtml+meta+' · <span class="time-ago">'+timeAgo(item.date)+'</span></div></div>';
       // "All caught up" divider after 5th item
       if(idx===4&&items.length>5)card+='<div class="caught-up card-enter" data-enter-delay="5"><div class="caught-up-icon">✅</div><div class="caught-up-text">Видя всичко ново</div><div class="caught-up-sub">Можеш да спреш тук или да продължиш надолу</div></div>';
       return card;

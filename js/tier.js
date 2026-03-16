@@ -122,6 +122,13 @@ function refreshTierDisplay(){
   }
   var gtb=document.getElementById('garageTierBadge');
   if(gtb)gtb.innerHTML=renderTierBadge(info.key);
+  // Tier nudge text
+  var nudgeEl=document.getElementById('tierNudge');
+  if(nudgeEl&&info.nextTier){
+    var diff=info.nextTier.minScore-info.score;
+    if(diff>0)nudgeEl.textContent='Още '+diff+' т. до '+info.nextTier.name;
+    else nudgeEl.textContent='';
+  }
 }
 
 function calcTierForUser(uid){
