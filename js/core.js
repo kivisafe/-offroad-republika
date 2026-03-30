@@ -146,12 +146,12 @@ document.addEventListener('click', function(e) {
   // Route actions
   if (action === 'go') go(param);
   else if (action === 'profile') openProfile(param);
-  else if (action === 'zone') { enterZone(param); go('forum'); }
+  else if (action === 'zone') { go('forum'); setTimeout(function(){ enterZone(param); }, 60); }
   else if (action === 'entry-go') entryGo(param, param2);
   else if (action === 'join-event') joinEvent(param, t);
   else if (action === 'toggle-moto') toggleMoto(t.closest('.mc'));
   else if (action === 'toggle-story') toggleStory(t.closest('.fc'));
-  else if (action === 'toggle-event') toggleEvent(t.closest('.ev'));
+  else if (action === 'toggle-event') toggleEvent(t.closest('.ev-wrap')||t.closest('.ev'));
   else if (action === 'toggle-garage') toggleGarage();
   else if (action === 'toggle-chat') toggleChat();
   else if (action === 'toggle-auth') toggleAuthModal();
@@ -176,4 +176,9 @@ document.addEventListener('click', function(e) {
   else if (action === 'sell-bike') sellBike(parseInt(param));
   else if (action === 'submit-bike-comment') submitBikeComment(param, parseInt(param2));
   else if (action === 'toggle-bike-comments') { var bc=t.nextElementSibling; if(bc)bc.classList.toggle('open'); t.classList.toggle('open'); }
+  else if (action === 'open-listing') openListing(param);
+  else if (action === 'open-forum-thread') openForumThread(param);
+  else if (action === 'auth-toggle') toggleAuthModal();
+  else if (action === 'search-go') { var si=document.getElementById('searchInput');if(si){si.value=param;si.dispatchEvent(new Event('input'));} go('home'); }
+  else if (action === 'new-topic-zone') { go('forum');setTimeout(function(){enterZone(param);setTimeout(function(){showNewTopicForm(param)},150)},150); }
 });

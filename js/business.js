@@ -105,12 +105,30 @@ function refreshCredBadges(){
 
 // ===== V10: BUSINESS DATA =====
 var businessData={
-  motohaus:{name:'МотоХаус',icon:'🏪',type:'shop',models:['yamaha','yz250f','yz125','wr450f'],tags:['части','окачване','wp','масла'],offers:[{title:'WP XPLOR Ревизия',price:'350 лв',desc:'Смяна масло + семеринги + настройка'},{title:'Yamaha OEM части -10%',price:'от 15 лв',desc:'Всички оригинални части Yamaha'}]},
-  pesho:{name:'Пешо Механика',icon:'🔧',type:'mechanic',models:['yamaha','yz250f','ktm','exc','husqvarna'],tags:['ремонт','окачване','двигател','вибрация','контратежест'],offers:[{title:'Инспекция при покупка',price:'80 лв',desc:'Пълен преглед + писмено становище'},{title:'Ревизия окачване',price:'от 120 лв',desc:'Предно/задно, всички марки'}]},
-  edimoto_shop:{name:'EdiMoto',icon:'🏍️',type:'dealer',models:['ktm','exc','husqvarna','fe','te','gasgas'],tags:['нов мотор','дилър','гаранция','конверсионен кит'],offers:[{title:'KTM EXC 2026 наличен',price:'от 24 900 лв',desc:'Фабрична гаранция 2г'},{title:'Конверсионен кит EXC→6Days',price:'2 800 лв',desc:'Пълен кит с монтаж'}]},
-  gosho:{name:'Гошо Електро',icon:'⚡',type:'specialist',models:['fantic','xef','euro5','ecu'],tags:['електрика','ecu','ремап','диагностика'],offers:[{title:'ECU диагностика',price:'60 лв',desc:'Пълно сканиране + доклад'}]},
-  elilison:{name:'Ели Лисън',icon:'🧤',type:'shop',models:['*'],tags:['екипировка','каска','ботуши','протектори','alpinestars','fox'],offers:[{title:'Alpinestars Tech 7 -15%',price:'680 лв',desc:'Всички размери на склад'}]}
+  motohaus:{name:'МотоХаус',icon:'🏪',type:'shop',city:'Нови хан',models:['yamaha','yz250f','yz125','wr450f'],tags:['части','окачване','wp','масла'],offers:[{title:'WP XPLOR Ревизия',price:'350 лв',desc:'Смяна масло + семеринги + настройка'},{title:'Yamaha OEM части -10%',price:'от 15 лв',desc:'Всички оригинални части Yamaha'}]},
+  pesho:{name:'Пешо Механика',icon:'🔧',type:'mechanic',city:'Пловдив',models:['yamaha','yz250f','ktm','exc','husqvarna'],tags:['ремонт','окачване','двигател','вибрация','контратежест'],offers:[{title:'Инспекция при покупка',price:'80 лв',desc:'Пълен преглед + писмено становище'},{title:'Ревизия окачване',price:'от 120 лв',desc:'Предно/задно, всички марки'}]},
+  edimoto_shop:{name:'EdiMoto',icon:'🏍️',type:'dealer',city:'София',models:['ktm','exc','husqvarna','fe','te','gasgas'],tags:['нов мотор','дилър','гаранция','конверсионен кит'],offers:[{title:'KTM EXC 2026 наличен',price:'от 24 900 лв',desc:'Фабрична гаранция 2г'},{title:'Конверсионен кит EXC→6Days',price:'2 800 лв',desc:'Пълен кит с монтаж'}]},
+  gosho:{name:'Гошо Електро',icon:'⚡',type:'specialist',city:'Пловдив',models:['fantic','xef','euro5','ecu'],tags:['електрика','ecu','ремап','диагностика'],offers:[{title:'ECU диагностика',price:'60 лв',desc:'Пълно сканиране + доклад'}]},
+  elilison:{name:'Ели Лисън',icon:'🧤',type:'shop',city:'София',models:['*'],tags:['екипировка','каска','ботуши','протектори','alpinestars','fox'],offers:[{title:'Alpinestars Tech 7 -15%',price:'680 лв',desc:'Всички размери на склад'}]}
 };
+
+// ===== NEWBIE HUB: BUSINESSES NEAR USER =====
+function getBusinessesNearUser(userId){
+  var users=getUsers();var user=users[userId];
+  var userCity=(user&&user.city||'').toLowerCase().trim();
+  var results=[];
+  Object.keys(businessData).forEach(function(key){
+    var biz=businessData[key];
+    var bizCity=(biz.city||'').toLowerCase().trim();
+    var bp=null;try{bp=JSON.parse(localStorage.getItem('orBizProfile_'+key))}catch(e){}
+    var bpCity=bp&&bp.city?(bp.city).toLowerCase().trim():'';
+    var city=bpCity||bizCity;
+    var near=userCity&&city&&(city.indexOf(userCity)>-1||userCity.indexOf(city)>-1);
+    results.push({key:key,biz:biz,city:biz.city||(bp&&bp.city)||'',near:near,bp:bp});
+  });
+  results.sort(function(a,b){return(b.near?1:0)-(a.near?1:0)});
+  return results;
+}
 
 // ===== V10: BUSINESS MATCHING =====
 function getRelevantBusinesses(tags){

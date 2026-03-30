@@ -1537,3 +1537,82 @@ body.has-sticky{padding-top:44px}
   .listing-card-thumb{height:80px}
   .trainer-session-details{flex-direction:column;gap:4px}
 }
+
+/* ===== NEWBIE HUB ===== */
+.newbie-hub{margin-bottom:16px}
+.newbie-section{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px}
+.newbie-section-title{font:700 13px 'Bebas Neue',sans-serif;color:var(--orange);letter-spacing:1.5px;margin-bottom:6px}
+.newbie-section-sub{font:400 11px 'Exo 2',sans-serif;color:var(--text2);margin-bottom:10px}
+
+/* Section A: Popular bikes */
+.newbie-bikes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.newbie-bike-card{background:rgba(232,98,44,.06);border:1px solid rgba(232,98,44,.2);border-radius:8px;padding:10px;cursor:pointer;transition:border-color .2s,transform .15s}
+.newbie-bike-card:hover{border-color:var(--orange);transform:translateY(-1px)}
+.nbc-name{font:600 12px 'Exo 2',sans-serif;color:var(--text)}
+.nbc-stat{font:400 10px 'Exo 2',sans-serif;color:var(--orange);margin-top:4px}
+.nbc-riders{font:400 9px 'Exo 2',sans-serif;color:var(--text2);margin-top:2px}
+
+/* Expert bikes */
+.newbie-expert-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.newbie-expert-card{background:rgba(90,138,60,.06);border:1px solid rgba(90,138,60,.2);border-radius:8px;padding:10px}
+.nec-header{font:600 12px 'Exo 2',sans-serif;color:var(--text)}
+.nec-emoji{font-size:14px}
+.nec-meta{font:400 10px 'Exo 2',sans-serif;color:var(--text2);margin-top:3px}
+.nec-price{color:var(--orange);font-weight:600}
+.nec-why{font:400 10px 'Exo 2',sans-serif;color:var(--text2);margin-top:4px;line-height:1.4}
+.nec-level{font:500 9px 'Exo 2',sans-serif;margin-top:4px}
+
+/* Section B: Listings */
+.newbie-listings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.newbie-listing-card{background:rgba(196,154,108,.06);border:1px solid rgba(196,154,108,.2);border-radius:8px;padding:10px;cursor:pointer;transition:border-color .2s,transform .15s}
+.newbie-listing-card:hover{border-color:var(--earth);transform:translateY(-1px)}
+.nlc-thumb{height:60px;overflow:hidden;border-radius:6px;margin-bottom:6px}
+.nlc-thumb img{width:100%;height:100%;object-fit:cover}
+.nlc-title{font:600 11px 'Exo 2',sans-serif;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nlc-price{font:700 13px 'Bebas Neue',sans-serif;color:var(--orange);margin-top:3px}
+.nlc-meta{font:400 9px 'Exo 2',sans-serif;color:var(--text2);margin-top:2px}
+.nlc-seller{font:400 9px 'Exo 2',sans-serif;color:var(--text2);margin-top:2px}
+.newbie-more{text-align:center;margin-top:8px;font:500 11px 'Exo 2',sans-serif;color:var(--orange);cursor:pointer}
+.newbie-more:hover{text-decoration:underline}
+.newbie-empty{font:400 11px 'Exo 2',sans-serif;color:var(--text2);text-align:center;padding:12px 0}
+
+/* Section C: Businesses */
+.newbie-biz-grid{display:flex;flex-direction:column;gap:6px}
+.newbie-biz-card{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;transition:border-color .2s}
+.newbie-biz-card:hover{border-color:var(--orange)}
+.newbie-biz-card.near{border-color:rgba(90,138,60,.5);background:rgba(90,138,60,.06)}
+.nbzc-icon{font-size:22px;flex-shrink:0}
+.nbzc-body{min-width:0}
+.nbzc-name{font:600 12px 'Exo 2',sans-serif;color:var(--text)}
+.nbzc-near{font:700 9px 'Exo 2',sans-serif;color:var(--green);background:rgba(90,138,60,.15);padding:1px 6px;border-radius:4px;margin-left:4px}
+.nbzc-type{font:400 10px 'Exo 2',sans-serif;color:var(--text2);margin-top:2px}
+.nbzc-offer{font:400 10px 'Exo 2',sans-serif;color:var(--orange);margin-top:2px}
+.newbie-city-hint{font:400 11px 'Exo 2',sans-serif;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:rgba(212,165,67,.08);border:1px solid rgba(212,165,67,.2);border-radius:6px}
+
+/* Section D: Topics */
+.newbie-topics-list{display:flex;flex-direction:column;gap:6px}
+.newbie-topic-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;transition:border-color .2s}
+.newbie-topic-card:hover{border-color:var(--orange)}
+.ntc-header{display:flex;align-items:center;gap:6px}
+.ntc-type{flex-shrink:0}
+.ntc-title{font:600 12px 'Exo 2',sans-serif;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ntc-meta{font:400 9px 'Exo 2',sans-serif;color:var(--text2);margin-top:3px}
+.ntt-reply{font:400 10px 'Exo 2',sans-serif;color:var(--text2);margin-top:5px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid var(--orange)}
+
+/* Section E: Checklist */
+.newbie-checklist{background:rgba(212,165,67,.06);border-color:rgba(212,165,67,.2)}
+.newbie-check-bar{height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-bottom:8px;overflow:hidden}
+.newbie-check-fill{height:100%;background:var(--orange);border-radius:2px;transition:width .5s ease}
+.newbie-check-items{display:flex;gap:12px;flex-wrap:wrap}
+.newbie-check-item{font:400 11px 'Exo 2',sans-serif;color:var(--text2)}
+.newbie-check-item.done{color:var(--green);text-decoration:line-through;opacity:.7}
+.newbie-cta{text-align:center;padding:20px 14px;background:rgba(232,98,44,.06);border-color:rgba(232,98,44,.2)}
+.newbie-cta-text{font:500 13px 'Exo 2',sans-serif;color:var(--text);margin-bottom:10px}
+
+/* Newbie hub responsive */
+@media(max-width:480px){
+  .newbie-expert-grid{grid-template-columns:1fr}
+  .newbie-bikes-grid{grid-template-columns:1fr 1fr}
+  .newbie-listings-grid{grid-template-columns:1fr 1fr}
+  .newbie-check-items{flex-direction:column;gap:6px}
+}

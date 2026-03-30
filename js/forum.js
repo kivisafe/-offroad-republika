@@ -5,6 +5,25 @@
 //   refreshHome, go, _hashNav, openProfile, skeletonThenRender, initCardObserver, simulateReaders,
 //   addNotification, extractMentions, notifySubscribedBusinesses, openForumThread, filterByTag, trackTagSearch
 
+// ===== FORUM FILTER CHIPS =====
+function initForumFilters(){
+  var fb=document.getElementById('forumFilter');
+  if(!fb)return;
+  fb.addEventListener('click',function(e){
+    var chip=e.target.closest('.ff-chip');
+    if(!chip)return;
+    fb.querySelectorAll('.ff-chip').forEach(function(c){c.classList.remove('on')});
+    chip.classList.add('on');
+    var filter=chip.dataset.filter;
+    var zone=enterZone._current;
+    document.querySelectorAll('#t-forum .ft').forEach(function(ft){
+      var zoneMatch=!zone||ft.dataset.zone===zone;
+      var typeMatch=filter==='all'||ft.dataset.type===filter;
+      ft.style.display=(zoneMatch&&typeMatch)?'':'none';
+    });
+  });
+}
+
 // ===== FORUM ZONE SYSTEM =====
 const zoneNames={newbie:'Новобранец',problem:'Проблем с мотора',tech:'Техническо',plan:'Планиране',skill:'Финес и похват',story:'Истории от пътя',chat:'Свободен разговор'};
 const zoneColors={newbie:'#d4a543',problem:'var(--orange)',tech:'var(--green)',plan:'var(--earth)',skill:'#6ba4d4',story:'#8b6fb0',chat:'#7a8a6a'};
@@ -17,6 +36,12 @@ function enterZone(zone){
   document.getElementById('forumBcZone').textContent=zoneNames[zone]||zone;
   // Show handbook only in newbie zone
   document.getElementById('forumHandbook').style.display=(zone==='newbie')?'':'none';
+  // Show newbie hub
+  var hubEl=document.getElementById('newbieHub');
+  if(hubEl){
+    if(zone==='newbie'){hubEl.style.display='';renderNewbieHub();}
+    else{hubEl.style.display='none';hubEl.innerHTML='';}
+  }
   // Show filter bar
   var fb=document.getElementById('forumFilter');
   if(fb){fb.style.display='';fb.querySelectorAll('.ff-chip').forEach(function(c){c.classList.remove('on')});var first=fb.querySelector('[data-filter="all"]');if(first)first.classList.add('on');}
@@ -810,4 +835,237 @@ function seedForumDemo(){
     ]}
   ];
   saveForumPosts(seeds);
+}
+
+// ===== NEWBIE HUB =====
+
+var BEGINNER_BIKES=[
+  {make:'KTM',model:'EXC 250/300',type:'enduro',years:'2014-2020',priceRange:'4000-7000',emoji:'🟠',why:'Лек, 2-тактов, лесен за поддръжка. Златният стандарт за ендуро.',level:'beginner-mid'},
+  {make:'Yamaha',model:'WR250F',type:'enduro',years:'2015-2020',priceRange:'5000-8000',emoji:'🔵',why:'4-тактов, надежден, добър за дълги маршрути. По-тих от 2Т.',level:'beginner'},
+  {make:'Honda',model:'CRF250L/Rally',type:'dual-sport',years:'2017-2023',priceRange:'6000-10000',emoji:'🔴',why:'Улично-регистриран, лек, перфектен ако караш и асфалт.',level:'beginner'},
+  {make:'KTM',model:'EXC-F 250/350',type:'enduro',years:'2017-2022',priceRange:'6000-10000',emoji:'🟠',why:'4-тактов ендуро, повече мощност. За тези дето искат малко повече.',level:'beginner-mid'},
+  {make:'Husqvarna',model:'FE 250/350',type:'enduro',years:'2017-2022',priceRange:'6000-10000',emoji:'⚪',why:'Като KTM EXC-F, но с различна ергономия. Същата платформа.',level:'beginner-mid'}
+];
+
+var _popularBikesCache=null;
+function getPopularBikes(){
+  if(_popularBikesCache)return _popularBikesCache;
+  var users=getUsers();var agg={};
+  Object.keys(users).forEach(function(uid){
+    var bikes=[];try{bikes=JSON.parse(localStorage.getItem('orGarage_'+uid)||'[]')}catch(e){}
+    bikes.forEach(function(b){
+      if(!b.make||!b.model)return;
+      var key=(b.make+' '+b.model).toLowerCase().trim();
+      if(!agg[key])agg[key]={make:b.make,model:b.model,count:0,totalMonths:0,riders:[]};
+      agg[key].count++;
+      agg[key].totalMonths+=(b.months||0);
+      var name=users[uid]&&users[uid].name||uid;
+      if(agg[key].riders.indexOf(name)<0)agg[key].riders.push(name);
+    });
+  });
+  var arr=Object.keys(agg).map(function(k){
+    var item=agg[k];
+    item.avgMonths=item.count>0?Math.round(item.totalMonths/item.count):0;
+    return item;
+  });
+  arr.sort(function(a,b){return b.count-a.count});
+  _popularBikesCache=arr;
+  return arr;
+}
+
+function findNewbieTopics(limit){
+  limit=limit||6;
+  var keywords=['първи мотор','начинаещ','бюджет','какво да купя','нов ездач','първо каране','какво да гледам','за начало','екипировка за начинаещ'];
+  var posts=getForumPosts().filter(function(p){
+    if(p.deleted||p.flagged)return false;
+    if(p.zone==='newbie')return true;
+    var txt=((p.title||'')+(p.body||'')).toLowerCase();
+    for(var i=0;i<keywords.length;i++){if(txt.indexOf(keywords[i])>-1)return true}
+    if(p.tags&&p.tags.length){
+      for(var j=0;j<p.tags.length;j++){if(p.tags[j]==='екипировка'||p.tags[j]==='тренировка')return true}
+    }
+    return false;
+  });
+  posts.forEach(function(p){
+    var r=p.reactions||{like:[],wrench:[],thanks:[]};
+    p._score=(Array.isArray(p.replies)?p.replies.length:0)*2+
+      (Array.isArray(r.like)?r.like.length:0)+
+      (Array.isArray(r.wrench)?r.wrench.length:0)+
+      (Array.isArray(r.thanks)?r.thanks.length:0);
+  });
+  posts.sort(function(a,b){return b._score-a._score});
+  return posts.slice(0,limit);
+}
+
+function renderNewbieHub(){
+  var el=document.getElementById('newbieHub');if(!el)return;
+  _popularBikesCache=null; // Fresh data each render
+  var uid=getCurrentUserId();
+  var user=uid?getCurrentUser():null;
+  var users=getUsers();
+  var h='<div class="newbie-hub">';
+
+  // === Section A: Community popular bikes ===
+  var popular=getPopularBikes();
+  h+='<div class="newbie-section">';
+  h+='<div class="newbie-section-title">🏍️ ОБЩНОСТТА ПРЕПОРЪЧВА</div>';
+  if(popular.length){
+    h+='<div class="newbie-section-sub">Какво карат хората в Републиката</div>';
+    h+='<div class="newbie-bikes-grid">';
+    popular.slice(0,5).forEach(function(b){
+      h+='<div class="newbie-bike-card" data-action="search-go" data-param="'+escHtml(b.make+' '+b.model)+'">';
+      h+='<div class="nbc-name">'+escHtml(b.make)+' <strong>'+escHtml(b.model)+'</strong></div>';
+      h+='<div class="nbc-stat">'+b.count+' ездач'+(b.count>1?'и':'')+(b.avgMonths?' · ~'+b.avgMonths+' мес. опит':'')+'</div>';
+      h+='<div class="nbc-riders">'+b.riders.slice(0,3).map(function(r){return escHtml(r)}).join(', ')+(b.riders.length>3?' +':'')+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+  // Expert recommendations
+  h+='<div class="newbie-section-sub" style="margin-top:12px">Експертен списък за начинаещи</div>';
+  h+='<div class="newbie-expert-grid">';
+  BEGINNER_BIKES.forEach(function(b){
+    h+='<div class="newbie-expert-card">';
+    h+='<div class="nec-header"><span class="nec-emoji">'+b.emoji+'</span> <strong>'+escHtml(b.make)+' '+escHtml(b.model)+'</strong></div>';
+    h+='<div class="nec-meta">'+escHtml(b.type)+' · '+escHtml(b.years)+' · <span class="nec-price">'+escHtml(b.priceRange)+' лв</span></div>';
+    h+='<div class="nec-why">'+escHtml(b.why)+'</div>';
+    var lvl=b.level==='beginner'?'🟢 Начинаещ':'🟡 Начинаещ-среден';
+    h+='<div class="nec-level">'+lvl+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  h+='</div>';
+
+  // === Section B: Bikes for sale in Maze ===
+  var allListings=(getListings()||[]).concat(SEED_LISTINGS||[]);
+  var bikeListings=allListings.filter(function(l){return l.type==='bike'&&l.active!==false});
+  bikeListings.sort(function(a,b){return(a.price||0)-(b.price||0)});
+  h+='<div class="newbie-section">';
+  h+='<div class="newbie-section-title">💰 МОТОРИ В МАЗЕТО</div>';
+  if(bikeListings.length){
+    h+='<div class="newbie-section-sub">Най-достъпните обяви за мотори</div>';
+    h+='<div class="newbie-listings-grid">';
+    bikeListings.slice(0,4).forEach(function(l){
+      var seller=users[l.author];
+      h+='<div class="newbie-listing-card" data-action="open-listing" data-param="'+escHtml(l.id)+'">';
+      if(l.imageUrl)h+='<div class="nlc-thumb"><img src="'+escHtml(l.imageUrl)+'" alt="" onerror="this.parentNode.remove()"></div>';
+      h+='<div class="nlc-title">'+escHtml(l.title)+'</div>';
+      h+='<div class="nlc-price">'+(l.price?l.price.toLocaleString()+' лв':'Цена по запитване')+'</div>';
+      h+='<div class="nlc-meta">📍 '+escHtml(l.city||'—')+' · '+(l.condition==='new'?'Ново':'Употребявано')+'</div>';
+      if(seller)h+='<div class="nlc-seller">от '+escHtml(seller.name||l.author)+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+    h+='<div class="newbie-more" data-action="go" data-param="maze">Виж всички в Мазето →</div>';
+  }else{
+    h+='<div class="newbie-empty">Все още няма обяви за мотори. <span data-action="go" data-param="maze" class="link">Виж Мазето</span></div>';
+  }
+  h+='</div>';
+
+  // === Section C: Businesses near you ===
+  h+='<div class="newbie-section">';
+  h+='<div class="newbie-section-title">🔧 МАЙСТОРИ И МАГАЗИНИ</div>';
+  if(uid&&user){
+    var bizList=getBusinessesNearUser(uid);
+    var hasNear=bizList.some(function(b){return b.near});
+    if(hasNear){
+      h+='<div class="newbie-section-sub">Близо до '+escHtml(user.city||'теб')+'</div>';
+    }else if(!user.city){
+      h+='<div class="newbie-city-hint">📍 <span data-action="profile" data-param="'+escHtml(uid)+'" class="link">Добави града си в профила</span> за по-точни препоръки</div>';
+    }
+    h+='<div class="newbie-biz-grid">';
+    bizList.forEach(function(item){
+      var b=item.biz;var bp=item.bp;
+      h+='<div class="newbie-biz-card'+(item.near?' near':'')+'" data-action="profile" data-param="'+escHtml(item.key)+'">';
+      h+='<div class="nbzc-icon">'+b.icon+'</div>';
+      h+='<div class="nbzc-body">';
+      h+='<div class="nbzc-name">'+escHtml(b.name)+(item.near?' <span class="nbzc-near">БЛИЗО</span>':'')+'</div>';
+      var typeLabel={shop:'Магазин',mechanic:'Механик',dealer:'Дилър',specialist:'Специалист'}[b.type]||b.type;
+      h+='<div class="nbzc-type">'+escHtml(typeLabel)+' · 📍 '+escHtml(item.city||'—')+'</div>';
+      if(b.offers&&b.offers[0])h+='<div class="nbzc-offer">'+escHtml(b.offers[0].title)+' — '+escHtml(b.offers[0].price)+'</div>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }else{
+    h+='<div class="newbie-section-sub">Регистрирай се за персонализирани препоръки</div>';
+    h+='<div class="newbie-biz-grid">';
+    Object.keys(businessData).forEach(function(key){
+      var b=businessData[key];
+      h+='<div class="newbie-biz-card" data-action="profile" data-param="'+escHtml(key)+'">';
+      h+='<div class="nbzc-icon">'+b.icon+'</div>';
+      h+='<div class="nbzc-body">';
+      h+='<div class="nbzc-name">'+escHtml(b.name)+'</div>';
+      var typeLabel={shop:'Магазин',mechanic:'Механик',dealer:'Дилър',specialist:'Специалист'}[b.type]||b.type;
+      h+='<div class="nbzc-type">'+escHtml(typeLabel)+' · 📍 '+escHtml(b.city||'—')+'</div>';
+      if(b.offers&&b.offers[0])h+='<div class="nbzc-offer">'+escHtml(b.offers[0].title)+' — '+escHtml(b.offers[0].price)+'</div>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
+  // === Section D: Hot newbie topics ===
+  var topics=findNewbieTopics(6);
+  h+='<div class="newbie-section">';
+  h+='<div class="newbie-section-title">💬 ГОРЕЩИ ТЕМИ ЗА НАЧИНАЕЩИ</div>';
+  if(topics.length){
+    h+='<div class="newbie-topics-list">';
+    topics.forEach(function(p){
+      var replyCount=Array.isArray(p.replies)?p.replies.length:0;
+      var typeEmoji={q:'❓',e:'📝',s:'✅',h:'🔥'}[p.type]||'💬';
+      var topReply='';
+      if(p.replies&&p.replies.length){
+        var best=p.replies[0];
+        p.replies.forEach(function(r){if((Array.isArray(r.likes)?r.likes.length:0)>(Array.isArray(best.likes)?best.likes.length:0))best=r});
+        var authorName=users[best.author]&&users[best.author].name||best.author;
+        var snippet=(best.body||'').replace(/[*_#`\[\]]/g,'').slice(0,80);
+        topReply='<div class="ntt-reply"><strong>'+escHtml(authorName)+':</strong> '+escHtml(snippet)+(best.body.length>80?'...':'')+'</div>';
+      }
+      h+='<div class="newbie-topic-card" data-action="open-forum-thread" data-param="'+escHtml(p.id)+'">';
+      h+='<div class="ntc-header"><span class="ntc-type">'+typeEmoji+'</span> <span class="ntc-title">'+escHtml(p.title)+'</span></div>';
+      h+='<div class="ntc-meta">'+replyCount+' отговор'+(replyCount!==1?'а':'')+' · '+timeAgo(p.date)+'</div>';
+      if(topReply)h+=topReply;
+      h+='</div>';
+    });
+    h+='</div>';
+  }else{
+    h+='<div class="newbie-empty">Все още няма теми. <span data-action="new-topic-zone" data-param="newbie" class="link">Създай първата!</span></div>';
+  }
+  h+='</div>';
+
+  // === Section E: Checklist (compact, logged-in only) ===
+  if(uid&&user){
+    var clKey='orRegChecklist_'+uid;
+    var clData;try{clData=JSON.parse(localStorage.getItem(clKey)||'{}')}catch(e){clData={}}
+    if(!clData.dismissed){
+      var garage=getGarage();
+      var myPosts=getForumPosts().filter(function(p){return p.author===uid});
+      var bp=null;try{bp=JSON.parse(localStorage.getItem('orBizProfile_'+uid))}catch(e){}
+      var items=[
+        {done:garage.length>0,label:'Добави мотор в гаража',emoji:'🏍️'},
+        {done:myPosts.length>0,label:'Създай първата си тема',emoji:'💬'},
+        {done:!!(user.city&&user.bio),label:'Попълни профила си',emoji:'📝'}
+      ];
+      var doneCount=items.filter(function(i){return i.done}).length;
+      if(doneCount<items.length){
+        h+='<div class="newbie-section newbie-checklist">';
+        h+='<div class="newbie-section-title">📋 ТВОЯТ ПРОГРЕС ('+doneCount+'/'+items.length+')</div>';
+        h+='<div class="newbie-check-bar"><div class="newbie-check-fill" style="width:'+Math.round(doneCount/items.length*100)+'%"></div></div>';
+        h+='<div class="newbie-check-items">';
+        items.forEach(function(item){
+          h+='<div class="newbie-check-item'+(item.done?' done':'')+'"><span>'+(item.done?'✓':item.emoji)+'</span> '+escHtml(item.label)+'</div>';
+        });
+        h+='</div></div>';
+      }
+    }
+  }else{
+    h+='<div class="newbie-section newbie-cta">';
+    h+='<div class="newbie-cta-text">🏁 <strong>Регистрирай се</strong> и започни пътя си в Републиката</div>';
+    h+='<button class="btn btn-o" data-action="auth-toggle">Влез / Регистрирай се</button>';
+    h+='</div>';
+  }
+
+  h+='</div>';
+  el.innerHTML=h;
+  if(typeof initCardObserver==='function')initCardObserver();
 }
